@@ -1,0 +1,7 @@
+{
+  "name": "AskLiberia - The National Knowledge Engine",
+  "description": "A centralized, intelligent search engine and digital library for Liberia, powered by AI to provide accurate history, culture, tourism, and government information.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
