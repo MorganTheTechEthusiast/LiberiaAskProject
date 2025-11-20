@@ -19,12 +19,14 @@ export interface Category {
 }
 
 export enum ViewState {
+  AUTH = 'AUTH',
   HOME = 'HOME',
   RESULTS = 'RESULTS',
   CHAT = 'CHAT',
   ABOUT = 'ABOUT',
   BUSINESS = 'BUSINESS',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  PROFILE = 'PROFILE'
 }
 
 export interface ChatMessage {
@@ -54,6 +56,16 @@ export const COUNTIES = [
 ] as const;
 
 export type County = typeof COUNTIES[number];
+
+// --- Auth Types ---
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  joinedAt: number;
+}
 
 // --- Admin & Backend Types ---
 

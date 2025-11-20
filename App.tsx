@@ -8,12 +8,19 @@ import { BusinessView } from './components/BusinessView';
 import { ChatWidget } from './components/ChatWidget';
 import { SearchBar } from './components/SearchBar';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AuthPage } from './components/AuthPage';
+import { ProfileView } from './components/ProfileView';
 import { searchLiberia } from './services/geminiService';
 import { adminService } from './services/adminService';
-import { SearchResult, ViewState, Language, COUNTIES } from './types';
+import { authService } from './services/authService';
+import { SearchResult, ViewState, Language, COUNTIES, User } from './types';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   const [viewState, setViewState] = useState<ViewState>(ViewState.HOME);
   const [query, setQuery] = useState('');
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
@@ -22,6 +29,14 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('English');
 
   useEffect(() => {
+    // Check Authentication Logic
+    const user = authService.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+    setIsCheckingAuth(false);
+
+    // URL Param Logic
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q');
     const c = params.get('county');
@@ -36,10 +51,24 @@ const App: React.FC = () => {
     if (c && COUNTIES.includes(c as any)) setSelectedCounty(c);
     if (l && (l === 'English' || l === 'Koloqua')) setLanguage(l as Language);
 
-    if (q) {
+    if (q && user) { // Only auto-search if user is logged in
       handleSearch(q, c || 'All Liberia', (l as Language) || 'English');
     }
   }, []);
+
+  const handleLoginSuccess = (user: User) => {
+      setCurrentUser(user);
+      // If there was a pending query in URL, we could trigger it here, 
+      // but for now just going Home is cleaner
+  };
+
+  const handleLogout = () => {
+      authService.logout();
+      setCurrentUser(null);
+      setViewState(ViewState.HOME);
+      setSearchResult(null);
+      setQuery('');
+  };
 
   const handleSearch = async (newQuery: string, countyOverride?: string, languageOverride?: Language) => {
     const activeCounty = countyOverride || selectedCounty;
@@ -103,6 +132,12 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleProfileClick = () => {
+    setViewState(ViewState.PROFILE);
+    setQuery('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleAdminClick = () => {
       setViewState(ViewState.ADMIN);
   };
@@ -112,17 +147,30 @@ const App: React.FC = () => {
     handleSearch(q, selectedCounty, language);
   };
 
-  // Render simplified layout for Admin
+  // --- RENDER GATES ---
+
+  if (isCheckingAuth) {
+      return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-liberia-blue" /></div>;
+  }
+
+  // Render Admin Dashboard without wrapping it in AuthPage (it has its own login)
   if (viewState === ViewState.ADMIN) {
       return <AdminDashboard onLogout={handleGoHome} />;
   }
 
+  // Gatekeeper: If not logged in, show Auth Page
+  if (!currentUser) {
+      return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Authenticated App
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
       <Header 
         onLogoClick={handleGoHome} 
         onAboutClick={handleAboutClick} 
         onBusinessClick={handleBusinessClick}
+        onProfileClick={handleProfileClick}
         language={language}
         setLanguage={(l) => {
             setLanguage(l);
@@ -131,6 +179,8 @@ const App: React.FC = () => {
                 handleSearch(query, selectedCounty, l);
             }
         }}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
       
       <main className="flex-grow">
@@ -149,6 +199,10 @@ const App: React.FC = () => {
 
         {viewState === ViewState.BUSINESS && (
           <BusinessView />
+        )}
+
+        {viewState === ViewState.PROFILE && currentUser && (
+          <ProfileView user={currentUser} />
         )}
 
         {viewState === ViewState.RESULTS && (

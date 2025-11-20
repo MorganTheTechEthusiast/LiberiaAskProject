@@ -1,5 +1,5 @@
 
-import { SearchLog, ApiRequest, DonationLog, SponsoredItem, Language } from "../types";
+import { SearchLog, ApiRequest, DonationLog, SponsoredItem, Language, User } from "../types";
 
 // Keys for LocalStorage to simulate a database
 const KEYS = {
@@ -7,7 +7,8 @@ const KEYS = {
   API_REQUESTS: 'askliberia_api_requests',
   DONATIONS: 'askliberia_donations',
   SPONSORED: 'askliberia_sponsored',
-  ADMIN_SESSION: 'askliberia_admin_session'
+  ADMIN_SESSION: 'askliberia_admin_session',
+  USERS: 'askliberia_users' // Same key as AuthService
 };
 
 // Default Sponsored Data (Seed Data)
@@ -78,17 +79,24 @@ class AdminService {
     return data ? JSON.parse(data) : [];
   }
 
+  // Get actual users from Auth storage
+  getUsers(): User[] {
+      const data = localStorage.getItem(KEYS.USERS);
+      return data ? JSON.parse(data) : [];
+  }
+
   getStats() {
     const logs = this.getLogs();
     const requests = this.getApiRequests();
     const donations = this.getDonations();
+    const users = this.getUsers();
     
     // Calculate total donation amount
     const totalDonations = donations.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
 
     return {
       totalSearches: logs.length,
-      activeUsers: Math.floor(logs.length * 0.6) + 1, // Mock unique users
+      activeUsers: users.length, 
       pendingRequests: requests.filter(r => r.status === 'pending').length,
       totalRevenue: totalDonations
     };
