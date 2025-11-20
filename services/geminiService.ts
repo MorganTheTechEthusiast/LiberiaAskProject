@@ -2,7 +2,10 @@
 import { GoogleGenAI, Tool, Content, Modality } from "@google/genai";
 import { SearchResult, SearchSource, Language } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// For Vercel/Vite production, use import.meta.env.VITE_API_KEY
+// For Local/Playground, use process.env.API_KEY
+const apiKey = (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
+const ai = new GoogleGenAI({ apiKey });
 
 const LIBERIA_SYSTEM_INSTRUCTION = `
 You are "AskLiberia", a specialized national search engine and knowledge base for the Republic of Liberia.
