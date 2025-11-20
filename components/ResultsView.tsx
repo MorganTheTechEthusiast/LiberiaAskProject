@@ -29,7 +29,11 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
+  // Ensure even byte length for 16-bit PCM
+  if (data.length % 2 !== 0) {
+    data = data.slice(0, data.length - 1);
+  }
+  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -77,6 +81,34 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
       .catch((err) => {
         console.error('Failed to copy URL:', err);
       });
+  };
+
+  const handleShare = async () => {
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('q', query);
+        const shareUrl = url.toString();
+
+        const shareData = {
+          title: `AskLiberia: ${query}`,
+          text: `Check out this information about "${query}" on AskLiberia.`,
+          url: shareUrl
+        };
+
+        // Check if navigator.share is supported and if the data is valid
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+        } else {
+            // Fallback for browsers that don't support share or if URL is considered invalid by the browser
+            handleCopyLink();
+        }
+    } catch (err) {
+        console.error('Share failed:', err);
+        // Fallback to copy if not user cancelled (AbortError)
+        if (err instanceof Error && err.name !== 'AbortError') {
+            handleCopyLink();
+        }
+    }
   };
 
   const toggleAudio = async () => {
@@ -132,7 +164,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
 
     } catch (error) {
       console.error("Error playing audio:", error);
-      alert("Sorry, I couldn't read that out loud right now.");
+      alert("Sorry, I couldn't read that out loud right now. Please try again later.");
     } finally {
       setLoadingAudio(false);
     }
@@ -177,7 +209,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                              <Volume2 className="w-4 h-4" />
                           )}
                           <span>
-                            {loadingAudio ? 'Generating...' : isPlaying ? 'Stop Listening' : 'Listen to Answer'}
+                            {loadingAudio ? 'Generating Audio...' : isPlaying ? 'Stop Listening' : 'Listen to Answer'}
                           </span>
                         </button>
                     </div>
@@ -230,7 +262,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
 
                 {/* Actions */}
                 <div className="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-end space-x-4">
-                    <button className="flex items-center text-sm text-gray-600 hover:text-liberia-blue transition-colors">
+                    <button 
+                        onClick={handleShare}
+                        className="flex items-center text-sm text-gray-600 hover:text-liberia-blue transition-colors"
+                    >
                         <Share2 className="w-4 h-4 mr-1.5" /> Share
                     </button>
                     <button 
@@ -323,3 +358,4 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
     </div>
   );
 };
+    
