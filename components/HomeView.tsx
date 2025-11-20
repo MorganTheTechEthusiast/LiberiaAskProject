@@ -47,7 +47,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
         <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20 mb-4">
                 <span className="w-2 h-2 bg-liberia-red rounded-full animate-pulse"></span>
-                <span className="text-sm font-medium tracking-wide">The First Centralized Digital Library for Liberia</span>
+                <span className="text-sm font-medium tracking-wide">The First Centralized Digital Knowledge Engine for Liberia</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tight">
               Discover <span className="text-liberia-gold">Liberia</span>
