@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Menu, Star, Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, Star, Globe, X } from 'lucide-react';
 import { Language } from '../types';
 
 interface HeaderProps {
@@ -12,9 +12,15 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onLogoClick, onAboutClick, onBusinessClick, language, setLanguage }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const toggleLanguage = () => {
       setLanguage(language === 'English' ? 'Koloqua' : 'English');
+  };
+
+  const handleNavClick = (action: () => void) => {
+      action();
+      setIsMenuOpen(false);
   };
 
   return (
@@ -47,18 +53,53 @@ export const Header: React.FC<HeaderProps> = ({ onLogoClick, onAboutClick, onBus
                 <span>{language === 'English' ? 'English' : 'Koloqua'}</span>
              </button>
 
+             {/* Desktop Nav */}
              <nav className="hidden md:flex space-x-8">
                 <a href="#" onClick={(e) => { e.preventDefault(); onLogoClick(); }} className="text-gray-600 hover:text-liberia-blue font-medium">Home</a>
                 <a href="#about" onClick={(e) => { e.preventDefault(); onAboutClick(); }} className="text-gray-600 hover:text-liberia-blue font-medium">About</a>
                 <a href="#business" onClick={(e) => { e.preventDefault(); onBusinessClick(); }} className="text-gray-600 hover:text-liberia-blue font-medium">Business & API</a>
              </nav>
 
-             <button className="md:hidden text-gray-600 hover:text-liberia-blue">
-                <Menu className="w-6 h-6" />
+             {/* Mobile Menu Button */}
+             <button 
+                className="md:hidden text-gray-600 hover:text-liberia-blue p-1"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label="Toggle menu"
+             >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
              </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 absolute w-full left-0 shadow-xl animate-in slide-in-from-top-5 duration-200 z-40">
+          <div className="px-4 pt-2 pb-6 space-y-2">
+            <a 
+              href="#" 
+              onClick={(e) => { e.preventDefault(); handleNavClick(onLogoClick); }} 
+              className="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-liberia-blue hover:bg-blue-50 transition-colors"
+            >
+              Home
+            </a>
+            <a 
+              href="#about" 
+              onClick={(e) => { e.preventDefault(); handleNavClick(onAboutClick); }} 
+              className="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-liberia-blue hover:bg-blue-50 transition-colors"
+            >
+              About
+            </a>
+            <a 
+              href="#business" 
+              onClick={(e) => { e.preventDefault(); handleNavClick(onBusinessClick); }} 
+              className="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-liberia-blue hover:bg-blue-50 transition-colors"
+            >
+              Business & API
+            </a>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

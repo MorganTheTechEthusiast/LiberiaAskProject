@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SearchBar } from './SearchBar';
-import { Category, Language } from '../types';
-import { Landmark, BookOpen, GraduationCap, Briefcase, Flag, Map, Users, Music } from 'lucide-react';
+import { Category, Language, SponsoredItem } from '../types';
+import { adminService } from '../services/adminService';
+import { Landmark, BookOpen, GraduationCap, Briefcase, Flag, Map, Users, Music, Loader2 } from 'lucide-react';
 
 interface HomeViewProps {
   onSearch: (query: string) => void;
@@ -27,6 +28,16 @@ const IconMap: Record<string, React.FC<any>> = {
 };
 
 export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, onCountyChange, language }) => {
+  const [featuredContent, setFeaturedContent] = useState<SponsoredItem[]>([]);
+  const [loadingContent, setLoadingContent] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetch
+    const data = adminService.getSponsoredContent();
+    setFeaturedContent(data);
+    setLoadingContent(false);
+  }, []);
+
   return (
     <div className="flex flex-col items-center w-full">
       
@@ -88,49 +99,29 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
             <h2 className="text-xl md:text-2xl font-bold text-gray-800">Featured & Sponsored</h2>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border border-gray-200 px-2 py-1 rounded bg-gray-50">Partner Content</span>
         </div>
-        <div className="grid md:grid-cols-3 gap-6">
-            {/* Tourism Board Promo */}
-            <div className="relative group overflow-hidden rounded-xl shadow-sm cursor-pointer bg-gray-100">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"></div>
-                <img src="https://images.unsplash.com/photo-1518182170546-0766bb6f5656?q=80&w=2070&auto=format&fit=crop" alt="Kpatawee" className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
-                    <div className="flex items-center space-x-2 mb-2">
-                        <span className="bg-liberia-gold text-black text-[10px] font-bold px-2 py-0.5 rounded">TOURISM</span>
-                    </div>
-                    <h3 className="text-lg font-bold mb-1">Explore Kpatawee</h3>
-                    <p className="text-xs text-gray-300 line-clamp-2 mb-3">The "Wonder of Bong" awaits. Official guide by the Ministry of Tourism.</p>
-                    <button className="text-xs font-bold underline decoration-liberia-gold underline-offset-4">Plan Trip</button>
-                </div>
+        
+        {loadingContent ? (
+            <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-liberia-blue" />
             </div>
-
-            {/* University Promo */}
-            <div className="relative group overflow-hidden rounded-xl shadow-sm cursor-pointer bg-gray-100">
-                <div className="absolute inset-0 bg-gradient-to-t from-liberia-blue/95 via-liberia-blue/40 to-transparent z-10"></div>
-                <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop" alt="University" className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
-                    <div className="flex items-center space-x-2 mb-2">
-                         <span className="bg-white/20 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded">EDUCATION</span>
+        ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+                {featuredContent.map((item) => (
+                    <div key={item.id} className="relative group overflow-hidden rounded-xl shadow-sm cursor-pointer bg-gray-100">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"></div>
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
+                            <div className="flex items-center space-x-2 mb-2">
+                                <span className={`text-black text-[10px] font-bold px-2 py-0.5 rounded ${item.tag === 'TOURISM' ? 'bg-liberia-gold' : 'bg-white'}`}>{item.tag}</span>
+                            </div>
+                            <h3 className="text-lg font-bold mb-1">{item.title}</h3>
+                            <p className="text-xs text-gray-300 line-clamp-2 mb-3">{item.description}</p>
+                            <button className="text-xs font-bold underline decoration-liberia-gold underline-offset-4">{item.buttonText || 'Learn More'}</button>
+                        </div>
                     </div>
-                    <h3 className="text-lg font-bold mb-1">University of Liberia</h3>
-                    <p className="text-xs text-blue-100 line-clamp-2 mb-3">2025 Admissions Open. Join the Department of Digital Arts & Sciences.</p>
-                    <button className="text-xs font-bold underline decoration-white underline-offset-4">Apply Now</button>
-                </div>
+                ))}
             </div>
-
-             {/* Business Promo */}
-            <div className="relative group overflow-hidden rounded-xl shadow-sm cursor-pointer bg-gray-100">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"></div>
-                <img src="https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?q=80&w=2070&auto=format&fit=crop" alt="Real Estate" className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
-                    <div className="flex items-center space-x-2 mb-2">
-                        <span className="bg-white text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded">SPONSORED</span>
-                    </div>
-                    <h3 className="text-lg font-bold mb-1">Boulevard Palace</h3>
-                    <p className="text-xs text-gray-300 line-clamp-2 mb-3">Luxury stays in Sinkor. Book your business suite today.</p>
-                    <button className="text-xs font-bold underline decoration-liberia-gold underline-offset-4">View Rates</button>
-                </div>
-            </div>
-        </div>
+        )}
       </div>
 
       {/* Features / Trust Section */}

@@ -23,7 +23,8 @@ export enum ViewState {
   RESULTS = 'RESULTS',
   CHAT = 'CHAT',
   ABOUT = 'ABOUT',
-  BUSINESS = 'BUSINESS'
+  BUSINESS = 'BUSINESS',
+  ADMIN = 'ADMIN'
 }
 
 export interface ChatMessage {
@@ -53,3 +54,41 @@ export const COUNTIES = [
 ] as const;
 
 export type County = typeof COUNTIES[number];
+
+// --- Admin & Backend Types ---
+
+export interface SearchLog {
+  id: string;
+  query: string;
+  timestamp: number;
+  location: string; // County
+  language: Language;
+}
+
+export interface ApiRequest {
+  id: string;
+  email: string;
+  organization?: string;
+  type: 'free' | 'pro' | 'partner';
+  status: 'pending' | 'approved' | 'rejected';
+  timestamp: number;
+  apiKey?: string;
+}
+
+export interface DonationLog {
+  id: string;
+  amount: string;
+  method: 'local' | 'international';
+  timestamp: number;
+  status: 'completed';
+}
+
+export interface SponsoredItem {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  tag: string; // e.g., 'TOURISM', 'SPONSORED', 'EDUCATION'
+  linkUrl?: string;
+  buttonText?: string;
+}

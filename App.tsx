@@ -7,7 +7,9 @@ import { AboutView } from './components/AboutView';
 import { BusinessView } from './components/BusinessView';
 import { ChatWidget } from './components/ChatWidget';
 import { SearchBar } from './components/SearchBar';
+import { AdminDashboard } from './components/AdminDashboard';
 import { searchLiberia } from './services/geminiService';
+import { adminService } from './services/adminService';
 import { SearchResult, ViewState, Language, COUNTIES } from './types';
 import { Loader2 } from 'lucide-react';
 
@@ -24,6 +26,12 @@ const App: React.FC = () => {
     const q = params.get('q');
     const c = params.get('county');
     const l = params.get('lang');
+    const admin = params.get('admin');
+
+    if (admin) {
+        setViewState(ViewState.ADMIN);
+        return;
+    }
 
     if (c && COUNTIES.includes(c as any)) setSelectedCounty(c);
     if (l && (l === 'English' || l === 'Koloqua')) setLanguage(l as Language);
@@ -41,6 +49,9 @@ const App: React.FC = () => {
     setViewState(ViewState.RESULTS);
     setLoading(true);
     
+    // Log to Admin Backend
+    adminService.logSearch(newQuery, activeCounty, activeLang);
+
     // Update URL safely
     try {
       const url = new URL(window.location.href);
@@ -92,10 +103,19 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleAdminClick = () => {
+      setViewState(ViewState.ADMIN);
+  };
+
   // Wrapper to handle search from SearchBar where only query comes up
   const onSearchWrapper = (q: string) => {
     handleSearch(q, selectedCounty, language);
   };
+
+  // Render simplified layout for Admin
+  if (viewState === ViewState.ADMIN) {
+      return <AdminDashboard onLogout={handleGoHome} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
@@ -180,7 +200,7 @@ const App: React.FC = () => {
           <div className="mt-4 text-xs text-slate-600 space-x-4">
              <a href="#" onClick={(e) => { e.preventDefault(); handleBusinessClick(); }} className="hover:text-slate-300">API</a>
              <a href="#" onClick={(e) => { e.preventDefault(); handleBusinessClick(); }} className="hover:text-slate-300">Advertise</a>
-             <a href="#" onClick={(e) => { e.preventDefault(); handleBusinessClick(); }} className="hover:text-slate-300">Partners</a>
+             <a href="#" onClick={(e) => { e.preventDefault(); handleAdminClick(); }} className="hover:text-slate-300">Admin</a>
           </div>
         </div>
       </footer>

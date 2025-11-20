@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { adminService } from '../services/adminService';
 import { Code, Target, Briefcase, Heart, Check, ArrowRight, TrendingUp, Shield, Globe, X, Smartphone, CreditCard, Copy, CheckCircle, Mail, Building2, User, Loader2 } from 'lucide-react';
 
 export const BusinessView: React.FC = () => {
@@ -13,7 +14,7 @@ export const BusinessView: React.FC = () => {
   const [formData, setFormData] = useState({ email: '', org: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleDonateClick = () => {
     setShowDonationModal(true);
@@ -21,6 +22,13 @@ export const BusinessView: React.FC = () => {
 
   const closeDonationModal = () => {
     setShowDonationModal(false);
+  };
+
+  const handleProcessDonation = () => {
+      // Log donation to backend
+      adminService.logDonation(selectedAmount, donationType);
+      alert(`Thank you! We have recorded your pending ${donationType === 'local' ? 'Mobile Money' : 'Card'} transaction of $${selectedAmount}.`);
+      closeDonationModal();
   };
 
   const handleCopy = (text: string) => {
@@ -34,19 +42,28 @@ export const BusinessView: React.FC = () => {
     setFormData({ email: '', org: '', message: '' });
     setLoading(false);
     setSuccess(false);
-    setGeneratedKey(null);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
+    // Simulate network delay then save to backend
     setTimeout(() => {
+        // Submit to Admin Service
+        adminService.submitApiRequest({
+            email: formData.email,
+            organization: formData.org,
+            type: activeModal || 'free'
+        });
+
         setLoading(false);
         setSuccess(true);
+        
         if (activeModal === 'free') {
-            setGeneratedKey(`ask_lib_${Math.random().toString(36).substring(2, 10)}`);
+            setSuccessMessage("Your request has been received! An admin will review and email your key shortly.");
+        } else {
+            setSuccessMessage("Inquiry received. Our team will contact you within 24 hours.");
         }
     }, 1500);
   };
@@ -62,49 +79,14 @@ export const BusinessView: React.FC = () => {
     }
 
     if (success) {
-        if (activeModal === 'free') {
-            return (
-                <div className="p-8 text-center">
-                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">API Key Generated!</h3>
-                    <p className="text-sm text-gray-500 mb-6">Here is your personal access token. Keep it safe.</p>
-                    
-                    <div className="bg-gray-100 p-4 rounded-lg border border-gray-200 flex items-center justify-between mb-6">
-                        <code className="text-sm font-mono text-liberia-blue font-bold">{generatedKey}</code>
-                        <button 
-                            onClick={() => generatedKey && handleCopy(generatedKey)}
-                            className="p-2 hover:bg-gray-200 rounded-md transition-colors"
-                            title="Copy Key"
-                        >
-                            {copied === generatedKey ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-500" />}
-                        </button>
-                    </div>
-                    <button onClick={handleModalClose} className="w-full py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800">Close</button>
-                </div>
-            );
-        }
-        if (activeModal === 'pro') {
-             return (
-                <div className="p-8 text-center">
-                    <div className="w-12 h-12 bg-liberia-blue text-white rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Briefcase className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Welcome to Pro!</h3>
-                    <p className="text-sm text-gray-500 mb-6">Your subscription is active. We have sent a verification link to your email to access the dashboard.</p>
-                    <button onClick={handleModalClose} className="w-full py-2.5 bg-liberia-blue text-white rounded-lg font-medium hover:bg-blue-800">Go to Dashboard</button>
-                </div>
-            );
-        }
         return (
             <div className="p-8 text-center">
-                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building2 className="w-6 h-6" />
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Inquiry Received</h3>
-                <p className="text-sm text-gray-500 mb-6">Thank you for your interest. Our partnerships team will review your request and contact you within 24 hours.</p>
-                <button onClick={handleModalClose} className="w-full py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800">Done</button>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Request Submitted</h3>
+                <p className="text-sm text-gray-500 mb-6">{successMessage}</p>
+                <button onClick={handleModalClose} className="w-full py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800">Close</button>
             </div>
         );
     }
@@ -114,12 +96,12 @@ export const BusinessView: React.FC = () => {
         <form onSubmit={handleFormSubmit} className="p-6">
             <div className="mb-6 border-b border-gray-100 pb-4">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                    {activeModal === 'free' && <><Code className="w-5 h-5 text-gray-500 mr-2" /> Get Free API Key</>}
+                    {activeModal === 'free' && <><Code className="w-5 h-5 text-gray-500 mr-2" /> Get API Access</>}
                     {activeModal === 'pro' && <><Target className="w-5 h-5 text-liberia-blue mr-2" /> Upgrade to Pro</>}
                     {activeModal === 'partner' && <><Briefcase className="w-5 h-5 text-purple-600 mr-2" /> Partner Inquiry</>}
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                    {activeModal === 'free' && "Start building with 1,000 free requests/month."}
+                    {activeModal === 'free' && "Submit a request for developer access."}
                     {activeModal === 'pro' && "Unlock full access and commercial rights."}
                     {activeModal === 'partner' && "Let's build the future of Liberia together."}
                 </p>
@@ -141,38 +123,19 @@ export const BusinessView: React.FC = () => {
                     </div>
                 </div>
 
-                {activeModal === 'partner' && (
+                {(activeModal === 'partner' || activeModal === 'pro' || activeModal === 'free') && (
                     <div>
                         <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Organization / Company</label>
                         <div className="relative">
                             <Building2 className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                             <input 
                                 type="text" 
-                                required 
+                                required={activeModal !== 'free'} 
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-liberia-blue focus:border-liberia-blue outline-none text-sm"
                                 placeholder="Ministry of Tourism"
                                 value={formData.org}
                                 onChange={(e) => setFormData({...formData, org: e.target.value})}
                             />
-                        </div>
-                    </div>
-                )}
-
-                {activeModal === 'pro' && (
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Card Details (Secured)</label>
-                        <div className="relative">
-                            <CreditCard className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                            <input 
-                                type="text" 
-                                required 
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-liberia-blue focus:border-liberia-blue outline-none text-sm"
-                                placeholder="0000 0000 0000 0000"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                             <input type="text" placeholder="MM/YY" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-liberia-blue outline-none text-sm" />
-                             <input type="text" placeholder="CVC" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-liberia-blue outline-none text-sm" />
                         </div>
                     </div>
                 )}
@@ -200,8 +163,8 @@ export const BusinessView: React.FC = () => {
                         'bg-purple-600 hover:bg-purple-700'
                     }`}
                 >
-                    {activeModal === 'free' && "Generate Key"}
-                    {activeModal === 'pro' && "Subscribe ($49/mo)"}
+                    {activeModal === 'free' && "Request Key"}
+                    {activeModal === 'pro' && "Request Pro Access"}
                     {activeModal === 'partner' && "Send Inquiry"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
@@ -505,6 +468,9 @@ export const BusinessView: React.FC = () => {
                                 {copied === "0777123456" ? "Copied" : "Copy"}
                               </button>
                           </div>
+                          <button onClick={handleProcessDonation} className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors mt-2">
+                              I have sent the money
+                          </button>
                       </div>
                   ) : (
                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -513,7 +479,7 @@ export const BusinessView: React.FC = () => {
                               <input type="text" placeholder="MM/YY" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-liberia-blue outline-none text-sm" />
                               <input type="text" placeholder="CVC" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-liberia-blue outline-none text-sm" />
                           </div>
-                          <button className="w-full py-3 bg-liberia-blue text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-blue-100 mt-2">
+                          <button onClick={handleProcessDonation} className="w-full py-3 bg-liberia-blue text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-blue-100 mt-2">
                               Pay ${selectedAmount} USD
                           </button>
                        </div>
