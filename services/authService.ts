@@ -7,7 +7,7 @@ const KEYS = {
 };
 
 class AuthService {
-  // Simulate delay for realistic feel
+  // Simulate delay for realistic feel for local auth, but fast for Google
   private async delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -27,16 +27,12 @@ class AuthService {
   }
 
   async login(email: string, password: string): Promise<{ success: boolean; message?: string; user?: User }> {
-    await this.delay(800); // Fake network delay
+    await this.delay(800); 
 
     const users = this.getUsers();
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-    // For this mock, we aren't actually hashing passwords, just checking if user exists.
-    // In a real app, we would use bcrypt and proper backend validation.
     if (user) {
-        // Simulate password check (accept any password for demo if user exists, 
-        // or you could store passwords in localstorage but that is insecure even for demo)
         localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
         return { success: true, user };
     }
@@ -57,7 +53,6 @@ class AuthService {
         name,
         email,
         joinedAt: Date.now(),
-        // Generate a simple avatar based on initials
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=002868&color=fff`
     };
 
@@ -68,24 +63,61 @@ class AuthService {
     return { success: true, user: newUser };
   }
 
-  async loginWithGoogle(): Promise<User> {
-    await this.delay(1500);
-    // Simulate a Google User
+  // Handle login from external provider (Google)
+  async loginWithProvider(userData: { name: string; email: string; avatar?: string; id?: string }): Promise<User> {
+    // No delay for provider login to make it feel snappy
+    const users = this.getUsers();
+    let user = users.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
+
+    if (!user) {
+        // Create new user if they don't exist
+        user = {
+            id: userData.id || 'google_' + Date.now(),
+            name: userData.name,
+            email: userData.email,
+            avatar: userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=002868&color=fff`,
+            joinedAt: Date.now()
+        };
+        users.push(user);
+        localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+    } else {
+        // FORCE update profile if data differs (Name or Picture changed on Google)
+        let updated = false;
+        
+        if (userData.avatar && user.avatar !== userData.avatar) {
+             user.avatar = userData.avatar;
+             updated = true;
+        }
+        if (userData.name && user.name !== userData.name) {
+             user.name = userData.name;
+             updated = true;
+        }
+
+        if (updated) {
+            const otherUsers = users.filter(u => u.id !== user!.id);
+            localStorage.setItem(KEYS.USERS, JSON.stringify([...otherUsers, user]));
+        }
+    }
+
+    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+    return user;
+  }
+
+  // Fallback simulation for demo purposes (when API key is missing)
+  async loginWithGoogleSimulation(): Promise<User> {
+    await this.delay(1000);
+    
+    const randomNum = Math.floor(Math.random() * 1000);
     const googleUser: User = {
-        id: 'google_' + Date.now(),
+        id: 'google_sim_' + Date.now(),
         name: 'Liberian Visitor',
-        email: `visitor${Math.floor(Math.random() * 1000)}@gmail.com`,
+        email: `visitor${randomNum}@gmail.com`,
         joinedAt: Date.now(),
+        // Use a generic placeholder image that looks like a Google profile
         avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c'
     };
 
-    const users = this.getUsers();
-    // Check if this fake google user exists (based on email logic, simplified here)
-    users.push(googleUser); 
-    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
-    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(googleUser));
-    
-    return googleUser;
+    return this.loginWithProvider(googleUser);
   }
 
   logout() {

@@ -52,6 +52,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
   // Audio State
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
+  const [playbackComplete, setPlaybackComplete] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
@@ -66,6 +67,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
       }
     };
   }, []);
+
+  // Reset audio state when the result changes
+  useEffect(() => {
+    if (sourceRef.current) {
+        try {
+            sourceRef.current.onended = null;
+            sourceRef.current.stop();
+        } catch (e) {
+            // Ignore if already stopped
+        }
+        sourceRef.current = null;
+    }
+    setIsPlaying(false);
+    setPlaybackComplete(false);
+  }, [result]);
 
   if (!result) return null;
 
@@ -114,6 +130,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
   const toggleAudio = async () => {
     if (isPlaying) {
       if (sourceRef.current) {
+        sourceRef.current.onended = null; // Prevent completion state trigger
         sourceRef.current.stop();
         sourceRef.current = null;
       }
@@ -123,6 +140,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
 
     if (!result.text) return;
 
+    setPlaybackComplete(false);
     setLoadingAudio(true);
     try {
       // Initialize Audio Context if needed
@@ -156,6 +174,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
       source.onended = () => {
         setIsPlaying(false);
         sourceRef.current = null;
+        setPlaybackComplete(true);
+        // Revert back to normal state after 4 seconds
+        setTimeout(() => setPlaybackComplete(false), 4000);
       };
       
       source.start();
@@ -198,18 +219,22 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                           className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                             isPlaying 
                               ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100' 
-                              : 'bg-blue-50 text-liberia-blue hover:bg-blue-100 border border-blue-100'
+                              : playbackComplete
+                                ? 'bg-green-50 text-green-600 border border-green-100'
+                                : 'bg-blue-50 text-liberia-blue hover:bg-blue-100 border border-blue-100'
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           {loadingAudio ? (
                              <Loader2 className="w-4 h-4 animate-spin" />
                           ) : isPlaying ? (
                              <StopCircle className="w-4 h-4" />
+                          ) : playbackComplete ? (
+                             <Check className="w-4 h-4" />
                           ) : (
                              <Volume2 className="w-4 h-4" />
                           )}
                           <span>
-                            {loadingAudio ? 'Generating Audio...' : isPlaying ? 'Stop Listening' : 'Listen to Answer'}
+                            {loadingAudio ? 'Generating Audio...' : isPlaying ? 'Stop Listening' : playbackComplete ? 'Finished Listening' : 'Listen to Answer'}
                           </span>
                         </button>
                     </div>
@@ -358,4 +383,3 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
     </div>
   );
 };
-    

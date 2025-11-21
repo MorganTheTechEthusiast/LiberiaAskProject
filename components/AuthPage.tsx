@@ -1,8 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { authService } from '../services/authService';
 import { User } from '../types';
-import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Star } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Star, AlertCircle } from 'lucide-react';
+
+// Declare google global for TypeScript
+declare const google: any;
 
 interface AuthPageProps {
   onLoginSuccess: (user: User) => void;
@@ -12,11 +15,117 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [googleLoaded, setGoogleLoaded] = useState(false);
   
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Ref to track if we've already initialized the button to prevent double renders
+  const buttonInitialized = useRef(false);
+
+  // JWT Decoder for Google Credentials
+  const parseJwt = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("JWT Parse Error", e);
+      return null;
+    }
+  };
+
+  const handleGoogleCredentialResponse = async (response: any) => {
+      setIsLoading(true);
+      setError('');
+      try {
+          const data = parseJwt(response.credential);
+          if (data) {
+              console.log("Google Auth Data:", data); // Debug log
+              const user = await authService.loginWithProvider({
+                  name: data.name,
+                  email: data.email,
+                  avatar: data.picture, // Capture Google Profile Picture
+                  id: data.sub
+              });
+              onLoginSuccess(user);
+          } else {
+              setError("Failed to verify Google account details.");
+              setIsLoading(false);
+          }
+      } catch (err) {
+          console.error(err);
+          setError("Google authentication failed. Please try again.");
+          setIsLoading(false);
+      }
+  };
+
+  useEffect(() => {
+    // Check if Google script is loaded
+    let intervalId: any;
+    let timeoutId: any;
+
+    const initializeGoogle = () => {
+        if (typeof google !== 'undefined' && !buttonInitialized.current) {
+            setGoogleLoaded(true);
+            
+            try {
+                // Get Client ID from env
+                const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+
+                if (clientId) {
+                    google.accounts.id.initialize({
+                        client_id: clientId,
+                        callback: handleGoogleCredentialResponse
+                    });
+                    
+                    const btnDiv = document.getElementById("googleSignInDiv");
+                    if (btnDiv) {
+                        google.accounts.id.renderButton(
+                            btnDiv,
+                            { theme: "outline", size: "large", width: "100%", text: isLogin ? "signin_with" : "signup_with" }
+                        );
+                        buttonInitialized.current = true;
+                    }
+                } else {
+                    console.warn("VITE_GOOGLE_CLIENT_ID missing. Running in Demo/Simulation mode.");
+                    setGoogleLoaded(false); // Falls back to demo button
+                }
+            } catch (e) {
+                console.error("Google Auth Initialization Error:", e);
+                setGoogleLoaded(false);
+            }
+        }
+    };
+
+    // Attempt to initialize
+    initializeGoogle();
+
+    // If not loaded yet, poll for it
+    if (typeof google === 'undefined') {
+        intervalId = setInterval(() => {
+            if (typeof google !== 'undefined') {
+                clearInterval(intervalId);
+                initializeGoogle();
+            }
+        }, 200);
+
+        // Stop polling after 5 seconds to avoid infinite loops if network fails
+        timeoutId = setTimeout(() => {
+            clearInterval(intervalId);
+        }, 5000);
+    }
+
+    return () => {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
+    };
+  }, [isLogin]); // Re-run if isLogin changes to update button text (signin/signup)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,14 +160,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  // Fallback for Dev Mode without Client ID
+  const handleSimulatedGoogleLogin = async () => {
     setIsLoading(true);
+    setError('');
     try {
-        const user = await authService.loginWithGoogle();
+        const user = await authService.loginWithGoogleSimulation();
         onLoginSuccess(user);
     } catch (err) {
-        setError("Google login failed");
-    } finally {
+        setError("Google simulation failed");
         setIsLoading(false);
     }
   };
@@ -111,20 +221,44 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                 </p>
             </div>
 
-            {/* Google Button */}
-            <button 
-                type="button"
-                onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.17c-.22-.66-.35-1.36-.35-2.17s.13-1.51.35-2.17V7.96H2.18C.79 10.73 0 13.83 0 17c0 3.17.79 6.27 2.18 9.04l3.66-2.87z" fill="#FBBC05" />
-                    <path d="M12 4.81c1.61 0 3.09.55 4.26 1.67l3.18-3.18C17.46 1.47 14.97 0 12 0 7.7 0 3.99 2.47 2.18 5.96l3.66 2.87c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
-                {isLogin ? 'Sign in with Google' : 'Sign up with Google'}
-            </button>
+            {/* Error Banner */}
+            {error && (
+                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start animate-in slide-in-from-top-2">
+                    <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {/* Google Button Section */}
+            <div className="min-h-[50px] flex flex-col items-center justify-center relative">
+                 {/* This div is where Google renders the button */}
+                 <div id="googleSignInDiv" className={googleLoaded ? 'w-full h-[44px]' : 'hidden'}></div>
+                 
+                 {/* Fallback Button if Key is missing or Script fails */}
+                 {!googleLoaded && (
+                    <button 
+                        type="button"
+                        onClick={handleSimulatedGoogleLogin}
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors relative group"
+                    >
+                         <div className="absolute left-4">
+                             <svg className="h-5 w-5" viewBox="0 0 24 24">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                <path d="M5.84 14.17c-.22-.66-.35-1.36-.35-2.17s.13-1.51.35-2.17V7.96H2.18C.79 10.73 0 13.83 0 17c0 3.17.79 6.27 2.18 9.04l3.66-2.87z" fill="#FBBC05" />
+                                <path d="M12 4.81c1.61 0 3.09.55 4.26 1.67l3.18-3.18C17.46 1.47 14.97 0 12 0 7.7 0 3.99 2.47 2.18 5.96l3.66 2.87c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                         </div>
+                        {isLoading ? 'Authenticating...' : isLogin ? 'Sign in with Google (Demo)' : 'Sign up with Google (Demo)'}
+                    </button>
+                 )}
+                 {!googleLoaded && !isLoading && (
+                     <div className="text-[10px] text-gray-400 mt-2">
+                         (Note: Add VITE_GOOGLE_CLIENT_ID to env to enable real Google Auth)
+                     </div>
+                 )}
+            </div>
 
             <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -181,12 +315,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                         />
                     </div>
                 </div>
-
-                {error && (
-                    <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
-                        {error}
-                    </div>
-                )}
 
                 <button 
                     type="submit" 
