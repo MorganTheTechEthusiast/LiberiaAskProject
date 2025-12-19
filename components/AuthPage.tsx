@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { authService } from '../services/authService';
 import { User } from '../types';
-import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Star, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 // Declare google global for TypeScript
 declare const google: any;
@@ -16,6 +16,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleLoaded, setGoogleLoaded] = useState(false);
+  const [recentUsers, setRecentUsers] = useState<User[]>([]);
   
   // Form State
   const [name, setName] = useState('');
@@ -66,6 +67,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   };
 
   useEffect(() => {
+    // Fetch existing users for social proof
+    const users = authService.getUsers();
+    if (users.length > 0) {
+        // Show last 5 active users
+        const sorted = [...users].sort((a, b) => b.joinedAt - a.joinedAt).slice(0, 5);
+        setRecentUsers(sorted);
+    }
+
     // Check if Google script is loaded
     let intervalId: any;
     let timeoutId: any;
@@ -179,9 +188,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
       <div className="hidden lg:flex w-1/2 bg-liberia-blue text-white flex-col justify-between p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1547983539-f90147f7d52a?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center"></div>
         <div className="relative z-10">
-           <div className="flex items-center space-x-2">
-             <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Star className="w-6 h-6 text-liberia-gold fill-liberia-gold" />
+           <div className="flex items-center space-x-3">
+             <div className="p-2 bg-white rounded-lg shadow-md">
+                <div className="flex -space-x-1">
+                    <div className="w-3 h-6 bg-liberia-blue rounded-l-sm"></div>
+                    <div className="w-3 h-6 bg-white"></div>
+                    <div className="w-3 h-6 bg-liberia-red rounded-r-sm"></div>
+                </div>
              </div>
              <span className="text-2xl font-serif font-bold">AskLiberia</span>
            </div>
@@ -194,9 +207,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
            </p>
            <div className="mt-8 flex space-x-4">
               <div className="flex -space-x-4">
-                 {[1,2,3,4].map(i => (
-                    <div key={i} className="w-10 h-10 rounded-full border-2 border-liberia-blue bg-gray-300"></div>
-                 ))}
+                 {recentUsers.length > 0 ? (
+                     recentUsers.map((u) => (
+                         <img 
+                             key={u.id}
+                             src={u.avatar}
+                             alt={u.name}
+                             title={u.name}
+                             className="w-10 h-10 rounded-full border-2 border-liberia-blue bg-white object-cover"
+                         />
+                     ))
+                 ) : (
+                    [1,2,3,4].map(i => (
+                        <div key={i} className="w-10 h-10 rounded-full border-2 border-liberia-blue bg-gray-300 flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                    ))
+                 )}
               </div>
               <p className="flex items-center text-sm font-medium">
                  Join the community today.

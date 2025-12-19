@@ -99,9 +99,26 @@ const App: React.FC = () => {
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    const result = await searchLiberia(newQuery, activeCounty, activeLang);
-    setSearchResult(result);
-    setLoading(false);
+    // Initialize empty result to prepare for streaming
+    setSearchResult({ text: '', sources: [] });
+
+    try {
+        let hasStarted = false;
+        const result = await searchLiberia(newQuery, activeCounty, activeLang, (data) => {
+            // Stop loading spinner as soon as we get the first chunk of text or valid data
+            if (!hasStarted) {
+                setLoading(false);
+                hasStarted = true;
+            }
+            setSearchResult(data);
+        });
+        setSearchResult(result);
+    } catch (error) {
+        console.error("Search failed", error);
+        setSearchResult({ text: "Sorry, something went wrong. Please try again.", sources: [] });
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleGoHome = () => {

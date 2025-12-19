@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Mic, Loader2, MapPin, ChevronDown } from 'lucide-react';
 import { COUNTIES, Language } from '../types';
 
@@ -57,7 +57,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    // Use 'en-LR' (English - Liberia) for Koloqua/Liberian English, otherwise 'en-US'
+    // Use 'en-LR' (English - Liberia) for Koloqua/Liberian English if selected, otherwise 'en-US'
+    // This improves accuracy for Liberian accents and dialects.
     recognition.lang = language === 'Koloqua' ? 'en-LR' : 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
@@ -80,6 +81,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     recognition.start();
   };
 
+  const getListeningText = () => {
+      if (!isListening) return placeholder;
+      return language === 'Koloqua' ? "I listening to your Koloqua..." : "Listening...";
+  };
+
   return (
     <form onSubmit={handleSubmit} className={`relative w-full ${className}`}>
       <div className={`relative flex flex-col md:flex-row items-center w-full bg-white rounded-2xl md:rounded-full border transition-all duration-200 ${isListening ? 'border-liberia-red ring-2 ring-liberia-red/20' : 'border-gray-300 hover:shadow-md focus-within:shadow-md focus-within:border-liberia-blue'}`}>
@@ -93,7 +99,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={isListening ? (language === 'Koloqua' ? "I listening..." : "Listening...") : placeholder}
+            placeholder={getListeningText()}
             className="w-full py-3 px-4 text-gray-700 bg-transparent border-none focus:ring-0 focus:outline-none text-base md:text-lg placeholder-gray-400 rounded-full"
             />
         </div>
@@ -124,7 +130,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 type="button"
                 onClick={handleVoiceInput}
                 className={`p-2 rounded-full transition-colors ${isListening ? 'bg-red-100 text-liberia-red animate-pulse' : 'hover:bg-gray-100 text-gray-500'}`}
-                title="Voice Search"
+                title={language === 'Koloqua' ? "Voice Search (Koloqua)" : "Voice Search"}
             >
                 {isListening ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
             </button>

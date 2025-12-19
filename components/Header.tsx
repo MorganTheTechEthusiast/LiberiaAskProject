@@ -39,7 +39,6 @@ export const Header: React.FC<HeaderProps> = ({ onLogoClick, onAboutClick, onBus
                <div className="w-3 h-6 bg-liberia-red rounded-r-sm"></div>
             </div>
             <div className="relative">
-                <Star className="w-4 h-4 text-white absolute -left-8 top-1 fill-white" />
                 <span className="text-xl font-serif font-bold text-liberia-blue tracking-tight">
                 Ask<span className="text-liberia-red">Liberia</span>
                 </span>

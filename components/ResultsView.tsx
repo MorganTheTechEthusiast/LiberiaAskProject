@@ -85,44 +85,78 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
 
   if (!result) return null;
 
-  const handleCopyLink = () => {
+  const copyToClipboard = async (text: string) => {
+    // Try modern API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.warn("Clipboard write failed, attempting fallback", err);
+        }
+    }
+
+    // Fallback method using textarea
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        // Avoid scrolling to bottom
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+    } catch (err) {
+        console.error("Fallback copy failed", err);
+        return false;
+    }
+  };
+
+  const handleCopyLink = async () => {
     const url = new URL(window.location.href);
     url.searchParams.set('q', query);
     
-    navigator.clipboard.writeText(url.toString())
-      .then(() => {
-        setShowCopied(true);
-        setTimeout(() => setShowCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error('Failed to copy URL:', err);
-      });
+    const success = await copyToClipboard(url.toString());
+    
+    if (success) {
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    } else {
+      // Optional: Show user visible error or just log
+      console.error('Could not copy link');
+    }
   };
 
   const handleShare = async () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('q', query);
+    const shareUrl = url.toString();
+
+    const shareData = {
+      title: `AskLiberia: ${query}`,
+      text: `Check out this information about "${query}" on AskLiberia.`,
+      url: shareUrl
+    };
+
     try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('q', query);
-        const shareUrl = url.toString();
-
-        const shareData = {
-          title: `AskLiberia: ${query}`,
-          text: `Check out this information about "${query}" on AskLiberia.`,
-          url: shareUrl
-        };
-
-        // Check if navigator.share is supported and if the data is valid
-        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        if (navigator.share) {
             await navigator.share(shareData);
         } else {
-            // Fallback for browsers that don't support share or if URL is considered invalid by the browser
-            handleCopyLink();
+            await handleCopyLink();
         }
     } catch (err) {
-        console.error('Share failed:', err);
         // Fallback to copy if not user cancelled (AbortError)
         if (err instanceof Error && err.name !== 'AbortError') {
-            handleCopyLink();
+            console.warn('Share API failed, falling back to clipboard', err);
+            await handleCopyLink();
         }
     }
   };

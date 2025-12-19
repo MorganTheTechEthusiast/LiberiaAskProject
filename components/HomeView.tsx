@@ -44,7 +44,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
       {/* Hero Section */}
       <div className="w-full bg-gradient-to-b from-liberia-blue to-blue-900 text-white py-16 md:py-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1523527582-036a031d6d30?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
-        <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
+        <div className="relative z-10 max-w-3xl mx-auto text-center flex flex-col items-center space-y-6">
+            
+            {/* Logo for Home View */}
+            <div className="p-3 bg-white rounded-xl shadow-lg mb-2 animate-in zoom-in duration-500">
+                <div className="flex -space-x-1">
+                    <div className="w-4 h-8 bg-liberia-blue rounded-l-md"></div>
+                    <div className="w-4 h-8 bg-gray-100"></div>
+                    <div className="w-4 h-8 bg-liberia-red rounded-r-md"></div>
+                </div>
+            </div>
+
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20 mb-4">
                 <span className="w-2 h-2 bg-liberia-red rounded-full animate-pulse"></span>
                 <span className="text-sm font-medium tracking-wide">The First Centralized Digital Knowledge Engine for Liberia</span>
@@ -57,7 +67,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
               Your gateway to the Grain Coast.
             </p>
             
-            <div className="pt-6 max-w-2xl mx-auto">
+            <div className="pt-6 max-w-2xl mx-auto w-full">
               <SearchBar 
                 onSearch={onSearch} 
                 className="shadow-xl" 

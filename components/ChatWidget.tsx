@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
 import { chatWithLiberiaAI } from '../services/geminiService';
 import { ChatMessage, Language } from '../types';
 import ReactMarkdown from 'react-markdown';
+import { Content } from '@google/genai';
 
 interface ChatWidgetProps {
     language: Language;
@@ -32,20 +34,34 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ language }) => {
     setIsLoading(true);
 
     try {
-        // Convert simple format to Gemini History format if needed, 
-        // but for simplicity we'll just send the last query context or build history dynamically
-        // For this demo, we pass an empty history and let the function manage a fresh chat or 
-        // ideally we should map `messages` to `Content[]`.
-        // Mapping messages to Content[]:
-        const history = messages.map(m => ({
+        // Convert to proper History Content format
+        const history: Content[] = messages.map(m => ({
             role: m.role,
             parts: [{ text: m.content }]
         }));
 
-        const responseText = await chatWithLiberiaAI(history, userMsg, language);
-        setMessages(prev => [...prev, { role: 'model', content: responseText || "I couldn't find an answer to that." }]);
+        // Add placeholder for streaming response
+        setMessages(prev => [...prev, { role: 'model', content: '' }]);
+
+        await chatWithLiberiaAI(history, userMsg, language, (chunkText) => {
+            // Update the last message (the placeholder) with the streaming text
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const lastIndex = newMessages.length - 1;
+                if (newMessages[lastIndex].role === 'model') {
+                    newMessages[lastIndex].content = chunkText;
+                }
+                return newMessages;
+            });
+        });
+
     } catch (err) {
-        setMessages(prev => [...prev, { role: 'model', content: "Sorry, I'm having trouble connecting to the knowledge base right now." }]);
+        // If error, remove the placeholder or append error message
+        setMessages(prev => {
+             // Remove the empty placeholder if it exists
+             const newMessages = prev.filter(m => m.content !== '');
+             return [...newMessages, { role: 'model', content: "Sorry, I'm having trouble connecting to the knowledge base right now." }];
+        });
     } finally {
         setIsLoading(false);
     }
@@ -107,7 +123,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ language }) => {
                 </div>
               </div>
             ))}
-            {isLoading && (
+            {isLoading && messages[messages.length - 1].content === '' && (
                  <div className="flex justify-start">
                     <div className="bg-white p-3 rounded-2xl rounded-bl-none border border-gray-200 shadow-sm flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms'}}></div>

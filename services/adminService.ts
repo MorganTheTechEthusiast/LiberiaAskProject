@@ -1,17 +1,16 @@
 
-import { SearchLog, ApiRequest, DonationLog, SponsoredItem, Language, User } from "../types";
+import { SearchLog, ApiRequest, DonationLog, SponsoredItem, Language, User, ApiPlan } from "../types";
 
-// Keys for LocalStorage to simulate a database
 const KEYS = {
   LOGS: 'askliberia_logs',
   API_REQUESTS: 'askliberia_api_requests',
   DONATIONS: 'askliberia_donations',
   SPONSORED: 'askliberia_sponsored',
   ADMIN_SESSION: 'askliberia_admin_session',
-  USERS: 'askliberia_users' // Same key as AuthService
+  USERS: 'askliberia_users',
+  CURRENT_USER: 'askliberia_current_user'
 };
 
-// Default Sponsored Data (Seed Data)
 const DEFAULT_SPONSORED: SponsoredItem[] = [
   {
     id: '1',
@@ -28,22 +27,11 @@ const DEFAULT_SPONSORED: SponsoredItem[] = [
     imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop',
     tag: 'EDUCATION',
     buttonText: 'Apply Now'
-  },
-  {
-    id: '3',
-    title: 'Boulevard Palace',
-    description: 'Luxury stays in Sinkor. Book your business suite today.',
-    imageUrl: 'https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?q=80&w=2070&auto=format&fit=crop',
-    tag: 'SPONSORED',
-    buttonText: 'View Rates'
   }
 ];
 
 class AdminService {
-  // --- Auth ---
   login(password: string): boolean {
-    // In a real app, this would hit an API.
-    // Demo Password: admin123
     if (password === 'admin123') {
       localStorage.setItem(KEYS.ADMIN_SESSION, 'true');
       return true;
@@ -59,9 +47,8 @@ class AdminService {
     localStorage.removeItem(KEYS.ADMIN_SESSION);
   }
 
-  // --- Analytics & Logs ---
   logSearch(query: string, location: string, language: Language) {
-    const logs: SearchLog[] = this.getLogs();
+    const logs = this.getLogs();
     const newLog: SearchLog = {
       id: Date.now().toString(),
       query,
@@ -69,9 +56,51 @@ class AdminService {
       location,
       language
     };
-    // Keep only last 100 logs to prevent storage overflow in demo
-    const updatedLogs = [newLog, ...logs].slice(0, 100); 
-    localStorage.setItem(KEYS.LOGS, JSON.stringify(updatedLogs));
+    localStorage.setItem(KEYS.LOGS, JSON.stringify([newLog, ...logs].slice(0, 100)));
+    
+    // Simulate API Usage increment for the current user if they have a key
+    const currentUserStr = localStorage.getItem(KEYS.CURRENT_USER);
+    if (currentUserStr) {
+      const user: User = JSON.parse(currentUserStr);
+      if (user.apiKey) {
+        user.apiUsage.used += 1;
+        this.updateUserRecord(user);
+      }
+    }
+  }
+
+  private updateUserRecord(user: User) {
+    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+    const users = this.getUsers();
+    const updatedUsers = users.map(u => u.id === user.id ? user : u);
+    localStorage.setItem(KEYS.USERS, JSON.stringify(updatedUsers));
+  }
+
+  generateKey() {
+    return `ask_lib_${Math.random().toString(36).substring(2, 12)}_${Math.random().toString(36).substring(2, 8)}`;
+  }
+
+  async rotateApiKey(userId: string): Promise<string> {
+    const users = this.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) throw new Error("User not found");
+    
+    const newKey = this.generateKey();
+    user.apiKey = newKey;
+    this.updateUserRecord(user);
+    return newKey;
+  }
+
+  async upgradePlan(userId: string, plan: ApiPlan): Promise<void> {
+    const users = this.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) throw new Error("User not found");
+
+    user.apiPlan = plan;
+    user.apiUsage.limit = plan === 'pro' ? 50000 : plan === 'free' ? 1000 : 9999999;
+    if (!user.apiKey) user.apiKey = this.generateKey();
+    
+    this.updateUserRecord(user);
   }
 
   getLogs(): SearchLog[] {
@@ -79,10 +108,9 @@ class AdminService {
     return data ? JSON.parse(data) : [];
   }
 
-  // Get actual users from Auth storage
   getUsers(): User[] {
-      const data = localStorage.getItem(KEYS.USERS);
-      return data ? JSON.parse(data) : [];
+    const data = localStorage.getItem(KEYS.USERS);
+    return data ? JSON.parse(data) : [];
   }
 
   getStats() {
@@ -90,19 +118,14 @@ class AdminService {
     const requests = this.getApiRequests();
     const donations = this.getDonations();
     const users = this.getUsers();
-    
-    // Calculate total donation amount
-    const totalDonations = donations.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-
     return {
       totalSearches: logs.length,
       activeUsers: users.length, 
       pendingRequests: requests.filter(r => r.status === 'pending').length,
-      totalRevenue: totalDonations
+      totalRevenue: donations.reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
     };
   }
 
-  // --- API Requests ---
   submitApiRequest(data: Omit<ApiRequest, 'id' | 'status' | 'timestamp'>) {
     const requests = this.getApiRequests();
     const newReq: ApiRequest = {
@@ -125,9 +148,9 @@ class AdminService {
     const updated = requests.map(req => {
       if (req.id === id) {
         return { 
-            ...req, 
-            status, 
-            apiKey: status === 'approved' ? `ask_lib_${Math.random().toString(36).substring(2, 12)}` : undefined 
+          ...req, 
+          status, 
+          apiKey: status === 'approved' ? this.generateKey() : undefined 
         };
       }
       return req;
@@ -135,7 +158,6 @@ class AdminService {
     localStorage.setItem(KEYS.API_REQUESTS, JSON.stringify(updated));
   }
 
-  // --- Donations ---
   logDonation(amount: string, method: 'local' | 'international') {
     const donations = this.getDonations();
     const newDonation: DonationLog = {
@@ -153,11 +175,9 @@ class AdminService {
     return data ? JSON.parse(data) : [];
   }
 
-  // --- CMS (Sponsored Content) ---
   getSponsoredContent(): SponsoredItem[] {
     const data = localStorage.getItem(KEYS.SPONSORED);
     if (!data) {
-      // Initialize with seed data if empty
       localStorage.setItem(KEYS.SPONSORED, JSON.stringify(DEFAULT_SPONSORED));
       return DEFAULT_SPONSORED;
     }

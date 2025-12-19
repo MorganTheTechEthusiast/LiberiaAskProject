@@ -57,7 +57,9 @@ export const COUNTIES = [
 
 export type County = typeof COUNTIES[number];
 
-// --- Auth Types ---
+// --- Auth & API Types ---
+
+export type ApiPlan = 'free' | 'pro' | 'partner';
 
 export interface User {
   id: string;
@@ -65,6 +67,13 @@ export interface User {
   email: string;
   avatar?: string;
   joinedAt: number;
+  apiKey?: string;
+  apiSecret?: string;
+  apiPlan: ApiPlan;
+  apiUsage: {
+    used: number;
+    limit: number;
+  };
 }
 
 // --- Admin & Backend Types ---
@@ -81,7 +90,7 @@ export interface ApiRequest {
   id: string;
   email: string;
   organization?: string;
-  type: 'free' | 'pro' | 'partner';
+  type: ApiPlan;
   status: 'pending' | 'approved' | 'rejected';
   timestamp: number;
   apiKey?: string;
