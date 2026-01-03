@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { SearchBar } from './SearchBar';
 import { Category, Language, SponsoredItem } from '../types';
 import { adminService } from '../services/adminService';
-import { Landmark, BookOpen, GraduationCap, Briefcase, Flag, Map, Users, Music, Loader2 } from 'lucide-react';
+import { Landmark, BookOpen, GraduationCap, Briefcase, Flag, Map, Users, Music, Loader2, ArrowRight } from 'lucide-react';
 
 interface HomeViewProps {
   onSearch: (query: string) => void;
@@ -82,21 +82,41 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
 
       {/* Categories Grid */}
       <div className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">Explore by Category</h2>
+        <div className="text-center mb-12">
+            <h2 className="text-2xl font-bold text-gray-800">Explore by Category</h2>
+            <div className="h-1 w-12 bg-liberia-red mx-auto mt-2 rounded-full"></div>
+        </div>
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {CATEGORIES.map((cat) => {
             const Icon = IconMap[cat.icon];
             return (
               <button
                 key={cat.id}
-                onClick={() => onSearch(cat.promptPrefix)} // Simple trigger for now, could go to sub-page
-                className="flex flex-col items-start p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-liberia-blue/50 transition-all group text-left"
+                onClick={() => onSearch(cat.promptPrefix)}
+                className="group relative flex flex-col items-start p-7 bg-white rounded-2xl border border-gray-200 shadow-sm transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-liberia-blue/10 hover:border-liberia-blue text-left overflow-hidden"
               >
-                <div className="p-3 bg-blue-50 text-liberia-blue rounded-lg mb-4 group-hover:bg-liberia-blue group-hover:text-white transition-colors">
+                {/* Decorative Platform Accent */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-liberia-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                
+                {/* Icon Container */}
+                <div className="p-3.5 bg-blue-50 text-liberia-blue rounded-xl mb-5 group-hover:bg-liberia-blue group-hover:text-liberia-gold group-hover:rotate-6 transition-all duration-300 shadow-sm group-hover:shadow-md">
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-liberia-blue">{cat.name}</h3>
-                <p className="text-sm text-gray-500 leading-snug">{cat.description}</p>
+                
+                <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-liberia-blue transition-colors">
+                  {cat.name}
+                </h3>
+                
+                <p className="text-sm text-gray-500 leading-relaxed group-hover:text-gray-700 transition-colors">
+                  {cat.description}
+                </p>
+
+                {/* Animated "Explore" indicator */}
+                <div className="mt-5 flex items-center text-xs font-bold text-liberia-blue uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
+                  <span>Explore</span>
+                  <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
+                </div>
               </button>
             );
           })}
