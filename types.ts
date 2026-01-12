@@ -88,9 +88,10 @@ export interface SearchLog {
 
 export interface ApiRequest {
   id: string;
+  userId: string;
   email: string;
   organization?: string;
-  type: ApiPlan;
+  plan: ApiPlan;
   status: 'pending' | 'approved' | 'rejected';
   timestamp: number;
   apiKey?: string;

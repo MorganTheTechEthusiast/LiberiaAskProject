@@ -58,8 +58,6 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = (user: User) => {
       setCurrentUser(user);
-      // If there was a pending query in URL, we could trigger it here, 
-      // but for now just going Home is cleaner
   };
 
   const handleLogout = () => {
@@ -215,7 +213,7 @@ const App: React.FC = () => {
         )}
 
         {viewState === ViewState.BUSINESS && (
-          <BusinessView />
+          <BusinessView currentUser={currentUser} onUserUpdate={setCurrentUser} />
         )}
 
         {viewState === ViewState.PROFILE && currentUser && (

@@ -1,36 +1,90 @@
 
 import React, { useState } from 'react';
 import { adminService } from '../services/adminService';
-import { authService } from '../services/authService';
 import { 
   Code, Target, Briefcase, Heart, Check, ArrowRight, 
   Globe, X, CheckCircle, Building2, User as UserIcon, 
   Zap, Database, Terminal, Shield, Target as TargetIcon,
-  Heart as HeartIcon
+  Heart as HeartIcon, Key, Copy, Eye, EyeOff, Loader2, Send
 } from 'lucide-react';
-import { ApiPlan } from '../types';
+import { ApiPlan, User } from '../types';
 
-export const BusinessView: React.FC = () => {
-  const [showDonationModal, setShowDonationModal] = useState(false);
+interface BusinessViewProps {
+    currentUser: User | null;
+    onUserUpdate?: (user: User) => void;
+}
+
+export const BusinessView: React.FC<BusinessViewProps> = ({ currentUser, onUserUpdate }) => {
   const [activeModal, setActiveModal] = useState<ApiPlan | null>(null);
-  const [formData, setFormData] = useState({ email: '', org: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const currentUser = authService.getCurrentUser();
+  const [showKey, setShowKey] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Request Form State
+  const [orgName, setOrgName] = useState('');
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
 
   const handleModalClose = () => {
     setActiveModal(null);
-    setFormData({ email: '', org: '', message: '' });
     setLoading(false);
     setSuccess(false);
+    setRequestSubmitted(false);
+    setOrgName('');
   };
 
   const handleUpgrade = async (plan: ApiPlan) => {
     if (!currentUser) return alert("Please sign in first.");
+    
+    // Partner plan requires a manual request submission
+    if (plan === 'partner') {
+        setActiveModal('partner');
+        return;
+    }
+
     setLoading(true);
-    await adminService.upgradePlan(currentUser.id, plan);
-    setLoading(false);
-    setSuccess(true);
+    try {
+        await adminService.upgradePlan(currentUser.id, plan);
+        // Refresh user data locally
+        const updatedUser = adminService.getUsers().find(u => u.id === currentUser.id);
+        if (updatedUser && onUserUpdate) {
+            onUserUpdate(updatedUser);
+        }
+        setSuccess(true);
+    } catch (err) {
+        console.error(err);
+        alert("Action failed. Please try again.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleSubmitPartnerRequest = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      setLoading(true);
+      try {
+          adminService.submitApiRequest({
+              userId: currentUser.id,
+              email: currentUser.email,
+              organization: orgName,
+              plan: 'partner'
+          });
+          setRequestSubmitted(true);
+          setSuccess(true);
+      } catch (err) {
+          alert("Failed to submit request.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handleCopyKey = () => {
+      if (currentUser?.apiKey) {
+          navigator.clipboard.writeText(currentUser.apiKey);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+      }
   };
 
   const scrollToSection = (id: string) => {
@@ -42,7 +96,7 @@ export const BusinessView: React.FC = () => {
 
   return (
     <div className="w-full bg-white animate-in fade-in duration-500 relative">
-      {/* Hero Section - Updated to match Image Request */}
+      {/* Hero Section */}
       <div className="relative bg-[#0d1b2a] text-white py-24 px-4 overflow-hidden min-h-[500px] flex items-center">
         <div className="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-[#0d1b2a]/80 to-[#0d1b2a]"></div>
@@ -80,7 +134,94 @@ export const BusinessView: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 py-16">
         
-        {/* Tier-Based Access Section - Updated Heading to match Image 2 */}
+        {/* Developer Dashboard Section */}
+        {currentUser && (
+            <div className="mb-16 bg-slate-50 border border-slate-200 rounded-[2rem] p-8 md:p-12 animate-in slide-in-from-bottom-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <div>
+                        <div className="flex items-center space-x-2 mb-2">
+                            <span className="bg-liberia-blue text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Developer Console</span>
+                            <span className="text-xs text-slate-400 font-mono">ID: {currentUser.id}</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900">Welcome, {currentUser.name.split(' ')[0]}</h2>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                            <p className="text-xs font-bold text-slate-400 uppercase">Current Tier</p>
+                            <p className="font-bold text-liberia-blue capitalize">{currentUser.apiPlan} Access</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                    {/* API Key Box */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center">
+                            <Key className="w-4 h-4 mr-2 text-liberia-blue" />
+                            Active API Key
+                        </h3>
+                        {currentUser.apiKey ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                    <code className="flex-1 font-mono text-sm truncate mr-4 text-slate-600">
+                                        {showKey ? currentUser.apiKey : '••••••••••••••••••••••••'}
+                                    </code>
+                                    <div className="flex items-center space-x-1">
+                                        <button onClick={() => setShowKey(!showKey)} className="p-2 hover:bg-white rounded-lg text-slate-400">
+                                            {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                        <button onClick={handleCopyKey} className="p-2 hover:bg-white rounded-lg text-slate-400">
+                                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-400 italic">This key is unique to your account. Do not share it.</p>
+                            </div>
+                        ) : (
+                            <div className="text-center py-4">
+                                <p className="text-sm text-slate-500 mb-4">You haven't generated a key yet.</p>
+                                <button 
+                                    onClick={() => handleUpgrade('free')}
+                                    disabled={loading}
+                                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-liberia-blue text-white rounded-xl font-bold text-sm hover:bg-blue-900 transition-all w-full"
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                                    <span>Generate Free API Key</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Usage Progress */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center">
+                            <Database className="w-4 h-4 mr-2 text-liberia-blue" />
+                            Monthly Quota
+                        </h3>
+                        <div className="space-y-4">
+                            <div className="flex justify-between text-xs font-bold mb-1">
+                                <span className="text-slate-500">USAGE</span>
+                                <span className="text-slate-900">{currentUser.apiUsage.used.toLocaleString()} / {currentUser.apiUsage.limit.toLocaleString()}</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-liberia-blue transition-all duration-1000"
+                                    style={{ width: `${Math.min((currentUser.apiUsage.used / currentUser.apiUsage.limit) * 100, 100)}%` }}
+                                ></div>
+                            </div>
+                            <button 
+                                onClick={() => scrollToSection('plans')}
+                                className="text-xs font-bold text-liberia-blue hover:underline"
+                            >
+                                Need a higher limit? Upgrade Tier &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Tier-Based Access Section */}
         <div id="plans" className="mb-24 pt-12">
             <div className="text-center mb-16">
                 <div className="flex items-center justify-center mb-4 space-x-3">
@@ -108,10 +249,10 @@ export const BusinessView: React.FC = () => {
                     </ul>
                     <button 
                         onClick={() => handleUpgrade('free')}
-                        disabled={currentUser?.apiPlan === 'free'}
+                        disabled={loading || currentUser?.apiPlan === 'free' && currentUser?.apiKey !== undefined}
                         className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition-all disabled:bg-gray-50 disabled:text-gray-400"
                     >
-                        {currentUser?.apiPlan === 'free' ? 'Current Plan' : 'Get Started'}
+                        {loading ? 'Processing...' : currentUser?.apiPlan === 'free' && currentUser?.apiKey ? 'Current Plan' : 'Get Started'}
                     </button>
                 </div>
 
@@ -131,10 +272,10 @@ export const BusinessView: React.FC = () => {
                     </ul>
                     <button 
                         onClick={() => handleUpgrade('pro')}
-                        disabled={currentUser?.apiPlan === 'pro'}
-                        className="w-full py-3 rounded-xl bg-[#001c44] text-white font-bold hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20"
+                        disabled={loading || currentUser?.apiPlan === 'pro'}
+                        className="w-full py-3 rounded-xl bg-[#001c44] text-white font-bold hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:bg-slate-400"
                     >
-                        {currentUser?.apiPlan === 'pro' ? 'Current Plan' : 'Get Pro Access'}
+                        {loading ? 'Processing...' : currentUser?.apiPlan === 'pro' ? 'Current Plan' : 'Get Pro Access'}
                     </button>
                 </div>
 
@@ -152,16 +293,17 @@ export const BusinessView: React.FC = () => {
                         <li className="flex items-start"><Check className="w-4 h-4 text-[#7c3aed] mr-2 mt-0.5" /> SLA Guarantees</li>
                     </ul>
                     <button 
-                        onClick={() => setActiveModal('partner')}
-                        className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition-all"
+                        onClick={() => handleUpgrade('partner')}
+                        disabled={loading || currentUser?.apiPlan === 'partner'}
+                        className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition-all disabled:bg-slate-50 disabled:text-gray-400"
                     >
-                        Contact Sales
+                        {currentUser?.apiPlan === 'partner' ? 'Current Plan' : 'Request Access'}
                     </button>
                 </div>
             </div>
         </div>
 
-        {/* Targeted Advertising Section (Image 2) */}
+        {/* Targeted Advertising Section */}
         <div id="advertising" className="mb-24 flex flex-col lg:flex-row items-center gap-12 pt-12">
             <div className="lg:w-1/2">
                 <div className="mb-4 inline-flex p-3 bg-orange-50 text-orange-600 rounded-2xl">
@@ -220,57 +362,68 @@ export const BusinessView: React.FC = () => {
             </div>
         </div>
 
-        {/* Institutional Partnerships Section */}
-        <div id="partnerships" className="bg-gray-50 rounded-[3rem] p-12 md:p-20 text-center mb-24">
-            <div className="inline-flex p-4 bg-white text-[#001c44] rounded-3xl shadow-sm mb-8">
-                <Globe className="w-10 h-10" />
-            </div>
-            <h2 className="text-4xl font-bold text-[#001c44] mb-6">Institutional Partnerships</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto mb-16 text-lg leading-relaxed">
-                We are proud to partner with key national institutions to ensure data accuracy and promote digital literacy.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-8 text-left">
-                <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
-                    <div className="w-12 h-12 bg-blue-50 text-[#001c44] rounded-2xl flex items-center justify-center mb-6">
-                        <Building2 className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-[#001c44] mb-4">Strategic Partners</h3>
-                    <p className="text-gray-600 mb-8 flex-grow">
-                        We work with the <strong>Ministry of Information, Cultural Affairs and Tourism (MICAT)</strong> and the <strong>University of Liberia</strong> to digitize archives.
-                    </p>
-                    <button className="text-[#001c44] font-bold hover:underline flex items-center">
-                        Become a Partner <ArrowRight className="w-4 h-4 ml-2" />
-                    </button>
-                </div>
-
-                <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
-                    <div className="w-12 h-12 bg-red-50 text-[#BF0A30] rounded-2xl flex items-center justify-center mb-6">
-                        <HeartIcon className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-[#001c44] mb-4">Support AskLiberia</h3>
-                    <p className="text-gray-600 mb-8 flex-grow">
-                        Help us keep this knowledge engine free for Liberian students. Donate to our server fund through our NGO partners.
-                    </p>
-                    <button className="bg-[#BF0A30] text-white px-8 py-3 rounded-full font-bold hover:bg-red-800 transition-all shadow-lg shadow-red-900/20">
-                        Donate Now
-                    </button>
-                </div>
-            </div>
-        </div>
-
       </div>
 
-      {/* Success Modal */}
-      {success && (
+      {/* Partner Request Modal */}
+      {activeModal === 'partner' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in duration-300">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-2xl font-serif font-bold text-gray-900">Partner Access Request</h3>
+                      <button onClick={handleModalClose} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
+                  </div>
+
+                  {requestSubmitted ? (
+                      <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-blue-50 text-liberia-blue rounded-full flex items-center justify-center mx-auto mb-6">
+                              <CheckCircle className="w-8 h-8" />
+                          </div>
+                          <h4 className="text-xl font-bold mb-2">Request Received!</h4>
+                          <p className="text-sm text-gray-500">Our administrators will review your organization's request for Enterprise access. You'll receive a notification in your dashboard when approved.</p>
+                          <button onClick={handleModalClose} className="mt-8 w-full py-3 bg-liberia-blue text-white rounded-xl font-bold">Great, Thanks</button>
+                      </div>
+                  ) : (
+                      <form onSubmit={handleSubmitPartnerRequest} className="space-y-6">
+                        <p className="text-sm text-gray-500">Please provide your organization details to request custom API limits and data integration.</p>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Organization Name</label>
+                            <input 
+                                type="text" 
+                                required 
+                                value={orgName} 
+                                onChange={e => setOrgName(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-liberia-blue transition-all"
+                                placeholder="e.g. University of Liberia or Tech Startup"
+                            />
+                        </div>
+                        <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <Shield className="w-5 h-5 text-liberia-blue" />
+                            <p className="text-xs text-gray-500">Our review process takes 24-48 hours. Upon approval, your API key will be automatically upgraded.</p>
+                        </div>
+                        <button 
+                            type="submit" 
+                            disabled={loading || !orgName}
+                            className="w-full py-4 bg-liberia-blue text-white rounded-xl font-bold flex items-center justify-center space-x-2 hover:bg-blue-900 transition-all disabled:opacity-50"
+                        >
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                            <span>Submit Enterprise Request</span>
+                        </button>
+                      </form>
+                  )}
+              </div>
+          </div>
+      )}
+
+      {/* Success Modal (General Upgrades) */}
+      {success && !requestSubmitted && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-2xl p-8 max-w-sm text-center animate-in zoom-in">
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CheckCircle className="w-8 h-8" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Access Granted!</h3>
-                <p className="text-sm text-gray-500 mb-6">Your plan has been updated. You can find your API key in your Profile Dashboard.</p>
-                <button onClick={handleModalClose} className="w-full py-3 bg-liberia-blue text-white rounded-xl font-bold">Go to Dashboard</button>
+                <p className="text-sm text-gray-500 mb-6">Your plan has been updated. You can find your API key above or in your Profile Dashboard.</p>
+                <button onClick={handleModalClose} className="w-full py-3 bg-liberia-blue text-white rounded-xl font-bold">Close</button>
             </div>
         </div>
       )}

@@ -16,11 +16,15 @@ import {
   X,
   Trash2,
   Plus,
-  Lock
+  Lock,
+  Building2,
+  Clock,
+  ExternalLink,
+  Edit2
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'api' | 'donations' | 'cms'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'api' | 'donations' | 'cms'>('cms');
   const [isAuthenticated, setIsAuthenticated] = useState(adminService.isAuthenticated());
   const [password, setPassword] = useState('');
 
@@ -33,7 +37,8 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
 
   // CMS Form State
   const [newItem, setNewItem] = useState<Partial<SponsoredItem>>({ tag: 'SPONSORED' });
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -66,15 +71,35 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
 
   const handleApiAction = (id: string, status: 'approved' | 'rejected') => {
     adminService.updateApiRequestStatus(id, status);
+    // Visual feedback
+    const action = status === 'approved' ? 'Approved' : 'Rejected';
+    console.log(`Request ${id} ${action}`);
     refreshData();
   };
 
-  const handleAddItem = (e: React.FormEvent) => {
+  const handleOpenEdit = (item: SponsoredItem) => {
+    setNewItem(item);
+    setEditingId(item.id);
+    setShowModal(true);
+  };
+
+  const handleOpenAdd = () => {
+    setNewItem({ tag: 'SPONSORED' });
+    setEditingId(null);
+    setShowModal(true);
+  };
+
+  const handleSaveItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItem.title && newItem.imageUrl) {
-      adminService.addSponsoredItem(newItem as Omit<SponsoredItem, 'id'>);
-      setShowAddModal(false);
+      if (editingId) {
+        adminService.updateSponsoredItem(editingId, newItem);
+      } else {
+        adminService.addSponsoredItem(newItem as Omit<SponsoredItem, 'id'>);
+      }
+      setShowModal(false);
       setNewItem({ tag: 'SPONSORED' });
+      setEditingId(null);
       refreshData();
     }
   };
@@ -124,7 +149,7 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
       <aside className="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col">
         <div className="p-6 border-b border-gray-800">
           <h1 className="text-xl font-serif font-bold">AskLiberia <span className="text-liberia-red">Admin</span></h1>
-          <p className="text-xs text-gray-500 mt-1">v1.0.0 Stable</p>
+          <p className="text-xs text-gray-500 mt-1">v1.1.0 Stable</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
           <button onClick={() => setActiveTab('overview')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'overview' ? 'bg-liberia-blue text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
@@ -153,9 +178,12 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
 
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
-        <header className="flex justify-between items-center mb-8 md:hidden">
-             <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-             <button onClick={handleLogout} className="text-gray-500"><LogOut className="w-5 h-5" /></button>
+        <header className="flex justify-between items-center mb-8">
+             <h1 className="text-2xl font-bold text-gray-900 capitalize">{activeTab.replace('-', ' ')} Dashboard</h1>
+             <div className="flex items-center space-x-4">
+                 <div className="text-sm text-gray-500 hidden md:block">{new Date().toLocaleDateString('en-LR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                 <button onClick={handleLogout} className="md:hidden text-gray-500"><LogOut className="w-5 h-5" /></button>
+             </div>
         </header>
 
         {/* Overview Tab */}
@@ -262,50 +290,98 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
 
         {/* API Requests Tab */}
         {activeTab === 'api' && (
-           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-             <h3 className="text-lg font-bold text-gray-900 mb-6">Developer Access Requests</h3>
-             <div className="space-y-4">
-                {apiRequests.length === 0 ? (
-                    <p className="text-center text-gray-500 py-12">No pending requests.</p>
-                ) : (
-                    apiRequests.map((req) => (
-                        <div key={req.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-liberia-blue transition-colors">
-                            <div className="mb-4 md:mb-0">
-                                <div className="flex items-center mb-1">
-                                    <h4 className="font-bold text-gray-900 mr-2">{req.email}</h4>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                        req.type === 'pro' ? 'bg-blue-100 text-blue-700' : 
-                                        req.type === 'partner' ? 'bg-purple-100 text-purple-700' : 
-                                        'bg-green-100 text-green-700'
-                                    }`}>{req.type}</span>
-                                </div>
-                                <p className="text-sm text-gray-500">{req.organization || "Individual Developer"}</p>
-                                {req.apiKey && <div className="mt-2 text-xs font-mono bg-gray-100 p-1 rounded inline-block text-gray-600">Key: {req.apiKey}</div>}
-                            </div>
-                            
-                            {req.status === 'pending' ? (
-                                <div className="flex space-x-2">
-                                    <button 
-                                        onClick={() => handleApiAction(req.id, 'approved')}
-                                        className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-                                    >
-                                        <Check className="w-4 h-4 mr-1" /> Approve
-                                    </button>
-                                    <button 
-                                        onClick={() => handleApiAction(req.id, 'rejected')}
-                                        className="flex items-center px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100"
-                                    >
-                                        <X className="w-4 h-4 mr-1" /> Deny
-                                    </button>
-                                </div>
-                            ) : (
-                                <span className={`text-sm font-bold px-3 py-1 rounded-full ${req.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                    {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                                </span>
-                            )}
+           <div className="space-y-6">
+             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center space-x-3">
+                <Key className="w-6 h-6 text-liberia-blue" />
+                <div>
+                    <h3 className="font-bold text-gray-900">API Access Governance</h3>
+                    <p className="text-xs text-gray-600">Review organization requests for Partner and Enterprise tiers. Approving a request grants full commercial API rights.</p>
+                </div>
+             </div>
+
+             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-gray-900">Access Requests List</h3>
+                    <div className="flex items-center space-x-2 text-xs text-gray-400">
+                        <Clock className="w-4 h-4" />
+                        <span>Real-time Sync</span>
+                    </div>
+                </div>
+
+                <div className="divide-y divide-gray-100">
+                    {apiRequests.length === 0 ? (
+                        <div className="text-center py-16">
+                            <Key className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                            <p className="text-gray-500">No developer access requests found.</p>
                         </div>
-                    ))
-                )}
+                    ) : (
+                        apiRequests.map((req) => (
+                            <div key={req.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="p-2 bg-slate-100 rounded-lg">
+                                                <Building2 className="w-5 h-5 text-slate-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 text-lg">{req.organization || "Independent Developer"}</h4>
+                                                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                                                    <span>{req.email}</span>
+                                                    <span>•</span>
+                                                    <span>Requested {new Date(req.timestamp).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap gap-2 mt-4">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
+                                                req.plan === 'partner' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                            }`}>
+                                                Tier: {req.plan}
+                                            </span>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
+                                                req.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                                                req.status === 'rejected' ? 'bg-red-100 text-red-700' : 
+                                                'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                                Status: {req.status}
+                                            </span>
+                                            {req.apiKey && (
+                                                <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[10px] font-mono border border-gray-200">
+                                                    Key: {req.apiKey}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-3">
+                                        {req.status === 'pending' ? (
+                                            <>
+                                                <button 
+                                                    onClick={() => handleApiAction(req.id, 'approved')}
+                                                    className="flex items-center px-5 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-sm hover:shadow-md"
+                                                >
+                                                    <Check className="w-4 h-4 mr-2" /> Approve Request
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleApiAction(req.id, 'rejected')}
+                                                    className="flex items-center px-5 py-2.5 bg-white text-red-600 border border-red-100 rounded-xl font-bold hover:bg-red-50 transition-all"
+                                                >
+                                                    <X className="w-4 h-4 mr-2" /> Reject
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center text-sm font-medium text-gray-400">
+                                                <Check className="w-4 h-4 mr-2" />
+                                                Action Completed
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
              </div>
            </div>
         )}
@@ -316,7 +392,7 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
              <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">Homepage "Featured" Content</h3>
                 <button 
-                    onClick={() => setShowAddModal(true)}
+                    onClick={handleOpenAdd}
                     className="flex items-center px-4 py-2 bg-liberia-blue text-white rounded-lg font-medium hover:bg-blue-900"
                 >
                     <Plus className="w-4 h-4 mr-2" /> Add New
@@ -325,27 +401,48 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {sponsoredItems.map((item) => (
-                    <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden group relative">
-                        <div className="h-40 bg-gray-200 overflow-hidden">
+                    <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden group relative flex flex-col">
+                        <div className="h-40 bg-gray-200 overflow-hidden relative">
                             <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleOpenEdit(item)} className="p-2 bg-white text-gray-700 rounded-lg shadow hover:text-liberia-blue" title="Edit Item"><Edit2 className="w-4 h-4" /></button>
+                                <button onClick={() => handleDeleteItem(item.id)} className="p-2 bg-white text-red-600 rounded-lg shadow hover:bg-red-50" title="Delete Item"><Trash2 className="w-4 h-4" /></button>
+                            </div>
                         </div>
-                        <div className="p-4">
-                            <div className="flex justify-between items-start mb-2">
+                        <div className="p-4 flex-grow flex flex-col">
+                            <div className="mb-2">
                                 <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase">{item.tag}</span>
-                                <button onClick={() => handleDeleteItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                             </div>
                             <h4 className="font-bold text-gray-900 mb-1">{item.title}</h4>
                             <p className="text-xs text-gray-500 line-clamp-2 mb-3">{item.description}</p>
+                            <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
+                                <span className="text-[10px] text-gray-400 font-mono">ID: {item.id}</span>
+                                <button onClick={() => handleOpenEdit(item)} className="text-[10px] font-bold text-liberia-blue hover:underline uppercase tracking-wider">Quick Edit</button>
+                            </div>
                         </div>
                     </div>
                 ))}
              </div>
 
-             {showAddModal && (
+             {showModal && (
                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-                        <h3 className="text-lg font-bold mb-4">Add Featured Content</h3>
-                        <form onSubmit={handleAddItem} className="space-y-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold">{editingId ? 'Edit Featured Content' : 'Add Featured Content'}</h3>
+                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+                        </div>
+                        
+                        <form onSubmit={handleSaveItem} className="space-y-4">
+                            {/* Live Preview */}
+                            {newItem.imageUrl && (
+                                <div className="mb-4">
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Image Preview</label>
+                                    <div className="h-32 rounded-lg overflow-hidden border border-gray-100">
+                                        <img src={newItem.imageUrl} className="w-full h-full object-cover" alt="Preview" onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Invalid+Image+URL')} />
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 mb-1">Title</label>
                                 <input type="text" required className="w-full px-3 py-2 border rounded-lg text-sm" value={newItem.title || ''} onChange={e => setNewItem({...newItem, title: e.target.value})} />
@@ -373,8 +470,10 @@ export const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout })
                                 </div>
                             </div>
                             <div className="flex gap-3 mt-6">
-                                <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50">Cancel</button>
-                                <button type="submit" className="flex-1 py-2 bg-liberia-blue text-white rounded-lg text-sm font-bold hover:bg-blue-900">Add Item</button>
+                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50">Cancel</button>
+                                <button type="submit" className="flex-1 py-2 bg-liberia-blue text-white rounded-lg text-sm font-bold hover:bg-blue-900">
+                                    {editingId ? 'Update Content' : 'Save Content'}
+                                </button>
                             </div>
                         </form>
                     </div>

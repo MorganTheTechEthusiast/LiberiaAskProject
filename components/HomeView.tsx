@@ -32,7 +32,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
   const [loadingContent, setLoadingContent] = useState(true);
 
   useEffect(() => {
-    // Simulate fetch
     const data = adminService.getSponsoredContent();
     setFeaturedContent(data);
     setLoadingContent(false);
@@ -46,7 +45,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
         <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1523527582-036a031d6d30?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
         <div className="relative z-10 max-w-3xl mx-auto text-center flex flex-col items-center space-y-6">
             
-            {/* Logo for Home View */}
             <div className="p-3 bg-white rounded-xl shadow-lg mb-2 animate-in zoom-in duration-500">
                 <div className="flex -space-x-1">
                     <div className="w-4 h-8 bg-liberia-blue rounded-l-md"></div>
@@ -57,21 +55,20 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
 
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20 mb-4">
                 <span className="w-2 h-2 bg-liberia-red rounded-full animate-pulse"></span>
-                <span className="text-sm font-medium tracking-wide">The First Centralized Digital Knowledge Engine for Liberia</span>
+                <span className="text-sm font-medium tracking-wide uppercase tracking-tighter">Grain Coast Digital Archive</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tight">
-              Discover <span className="text-liberia-gold">Liberia</span>
+              Explore <span className="text-liberia-gold">Liberian</span> Heritage
             </h1>
             <p className="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto leading-relaxed">
-              Access verified information about history, culture, government, and business. 
-              Your gateway to the Grain Coast.
+              Ask any question about our history, culture, or future. Powered by verified national records.
             </p>
             
             <div className="pt-6 max-w-2xl mx-auto w-full">
               <SearchBar 
                 onSearch={onSearch} 
                 className="shadow-xl" 
-                placeholder="Try 'Who founded Liberia?' or 'Best hotels in Monrovia'" 
+                placeholder="Try '16 tribes of Liberia' or 'Who was J.J. Roberts?'" 
                 selectedCounty={selectedCounty}
                 onCountyChange={onCountyChange}
                 language={language}
@@ -81,41 +78,56 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
       </div>
 
       {/* Categories Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold text-gray-800">Explore by Category</h2>
-            <div className="h-1 w-12 bg-liberia-red mx-auto mt-2 rounded-full"></div>
+      <div className="max-w-7xl mx-auto px-4 py-20 w-full">
+        <div className="text-center mb-16">
+            <h2 className="text-3xl font-serif font-bold text-gray-900">Knowledge Categories</h2>
+            <div className="h-1 w-16 bg-liberia-red mx-auto mt-4 rounded-full"></div>
+            <p className="text-gray-500 mt-4 max-w-xl mx-auto">Select a category to begin your research journey with curated information on specific Liberian topics.</p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {CATEGORIES.map((cat) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {CATEGORIES.map((cat, index) => {
             const Icon = IconMap[cat.icon];
+            const animationDelay = `${index * 75}ms`;
+            
             return (
               <button
                 key={cat.id}
                 onClick={() => onSearch(cat.promptPrefix)}
-                className="group relative flex flex-col items-start p-7 bg-white rounded-2xl border border-gray-200 shadow-sm transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-liberia-blue/10 hover:border-liberia-blue text-left overflow-hidden"
+                style={{ animationDelay }}
+                className="group relative flex flex-col items-start p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm transition-all duration-500 ease-out hover:-translate-y-3 hover:shadow-2xl hover:shadow-liberia-blue/15 hover:border-liberia-blue/30 text-left overflow-hidden animate-in fade-in slide-in-from-bottom-10"
               >
-                {/* Decorative Platform Accent */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-liberia-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                {/* Visual Accent Layer: Progress Bar Style */}
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-50 overflow-hidden">
+                    <div className="h-full bg-liberia-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left ease-out"></div>
+                </div>
+
+                {/* Liberia Red Corner Accent */}
+                <div className="absolute top-0 right-0 w-12 h-12 bg-liberia-red translate-x-10 -translate-y-10 rotate-45 group-hover:translate-x-6 group-hover:-translate-y-6 transition-transform duration-500 opacity-20"></div>
                 
-                {/* Icon Container */}
-                <div className="p-3.5 bg-blue-50 text-liberia-blue rounded-xl mb-5 group-hover:bg-liberia-blue group-hover:text-liberia-gold group-hover:rotate-6 transition-all duration-300 shadow-sm group-hover:shadow-md">
-                  <Icon className="w-6 h-6" />
+                {/* Icon Container with multi-stage animation */}
+                <div className="relative p-4 bg-slate-50 text-liberia-blue rounded-2xl mb-6 group-hover:bg-liberia-blue group-hover:text-liberia-gold group-hover:rotate-[10deg] group-hover:scale-110 transition-all duration-500 shadow-sm border border-transparent group-hover:border-white/20">
+                  <Icon className="w-7 h-7" />
+                  {/* Subtle red dot that pulses on hover */}
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-liberia-red rounded-full opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100 transition-all duration-300 delay-100 ring-2 ring-white"></div>
                 </div>
                 
-                <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-liberia-blue transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-liberia-blue transition-colors flex items-center">
                   {cat.name}
                 </h3>
                 
-                <p className="text-sm text-gray-500 leading-relaxed group-hover:text-gray-700 transition-colors">
+                <p className="text-sm text-gray-500 leading-relaxed group-hover:text-gray-700 transition-colors mb-6">
                   {cat.description}
                 </p>
 
-                {/* Animated "Explore" indicator */}
-                <div className="mt-5 flex items-center text-xs font-bold text-liberia-blue uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
-                  <span>Explore</span>
-                  <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
+                {/* Enhanced "Explore" indicator */}
+                <div className="mt-auto flex items-center space-x-2">
+                    <div className="text-[11px] font-black text-liberia-blue uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-500">
+                        Dive Deeper
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-liberia-blue group-hover:text-white flex items-center justify-center transition-all duration-500 group-hover:translate-x-2">
+                        <ArrowRight className="w-4 h-4" />
+                    </div>
                 </div>
               </button>
             );
@@ -123,30 +135,39 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
         </div>
       </div>
 
-      {/* Sponsored / Featured Section */}
-      <div className="max-w-7xl mx-auto px-4 mb-16 w-full">
-        <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-2">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800">Featured & Sponsored</h2>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border border-gray-200 px-2 py-1 rounded bg-gray-50">Partner Content</span>
+      {/* Featured / Sponsored Section */}
+      <div className="max-w-7xl mx-auto px-4 mb-24 w-full">
+        <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
+            <div>
+                <h2 className="text-2xl font-bold text-gray-900">Featured Spotlights</h2>
+                <p className="text-sm text-gray-500 mt-1">Discover places and institutions shaping Liberia today.</p>
+            </div>
+            <div className="hidden sm:flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                <span className="w-2 h-2 bg-liberia-gold rounded-full"></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verified Partners</span>
+            </div>
         </div>
         
         {loadingContent ? (
-            <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-liberia-blue" />
+            <div className="flex justify-center py-20">
+                <Loader2 className="w-10 h-10 animate-spin text-liberia-blue" />
             </div>
         ) : (
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-8">
                 {featuredContent.map((item) => (
-                    <div key={item.id} className="relative group overflow-hidden rounded-xl shadow-sm cursor-pointer bg-gray-100">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"></div>
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
-                            <div className="flex items-center space-x-2 mb-2">
-                                <span className={`text-black text-[10px] font-bold px-2 py-0.5 rounded ${item.tag === 'TOURISM' ? 'bg-liberia-gold' : 'bg-white'}`}>{item.tag}</span>
+                    <div key={item.id} className="relative group overflow-hidden rounded-[2.5rem] shadow-md cursor-pointer bg-slate-900 border border-gray-100">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent z-10"></div>
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-1000 ease-out opacity-80 group-hover:opacity-100" />
+                        <div className="absolute bottom-0 left-0 p-8 z-20 text-white w-full">
+                            <div className="flex items-center space-x-2 mb-3">
+                                <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${item.tag === 'TOURISM' ? 'bg-liberia-gold text-liberia-blue' : 'bg-white text-liberia-blue'}`}>{item.tag}</span>
                             </div>
-                            <h3 className="text-lg font-bold mb-1">{item.title}</h3>
-                            <p className="text-xs text-gray-300 line-clamp-2 mb-3">{item.description}</p>
-                            <button className="text-xs font-bold underline decoration-liberia-gold underline-offset-4">{item.buttonText || 'Learn More'}</button>
+                            <h3 className="text-2xl font-bold mb-2 leading-tight">{item.title}</h3>
+                            <p className="text-sm text-gray-300 line-clamp-2 mb-6 group-hover:text-white transition-colors">{item.description}</p>
+                            <div className="flex items-center space-x-2 text-xs font-bold text-liberia-gold group-hover:translate-x-1 transition-transform">
+                                <span>{item.buttonText || 'Discover More'}</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -154,30 +175,31 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
         )}
       </div>
 
-      {/* Features / Trust Section */}
-      <div className="w-full bg-gray-50 py-16 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-                <div className="p-4">
-                    <div className="mx-auto w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
-                        <BookOpen className="w-6 h-6" />
+      {/* Trust & Heritage Section */}
+      <div className="w-full bg-slate-900 py-24 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-liberia-blue via-liberia-red to-liberia-gold opacity-50"></div>
+        <div className="max-w-7xl mx-auto px-4 relative z-10">
+            <div className="grid md:grid-cols-3 gap-12 text-center">
+                <div className="p-4 group">
+                    <div className="mx-auto w-16 h-16 bg-white/5 text-liberia-gold rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:bg-liberia-gold group-hover:text-liberia-blue transition-all duration-500">
+                        <BookOpen className="w-8 h-8" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Verified Information</h3>
-                    <p className="text-gray-600 text-sm">Our AI cross-references trusted government and educational sources to bring you accuracy.</p>
+                    <h3 className="font-bold text-xl mb-3 text-white">Academic Veracity</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">Cross-referenced with the University of Liberia archives and official MICAT records.</p>
                 </div>
-                <div className="p-4">
-                    <div className="mx-auto w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-4">
-                        <Music className="w-6 h-6" />
+                <div className="p-4 group">
+                    <div className="mx-auto w-16 h-16 bg-white/5 text-liberia-red rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:bg-liberia-red group-hover:text-white transition-all duration-500">
+                        <Music className="w-8 h-8" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Cultural Heritage</h3>
-                    <p className="text-gray-600 text-sm">Deep dive into the 16 tribes, dialects, festivals, and the rich arts of Liberia.</p>
+                    <h3 className="font-bold text-xl mb-3 text-white">Cultural Custody</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">Preserving the stories of the 16 original tribes and the rich oral traditions of the Grain Coast.</p>
                 </div>
-                <div className="p-4">
-                    <div className="mx-auto w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4">
-                        <Briefcase className="w-6 h-6" />
+                <div className="p-4 group">
+                    <div className="mx-auto w-16 h-16 bg-white/5 text-liberia-blue rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:bg-liberia-blue group-hover:text-white transition-all duration-500">
+                        <Briefcase className="w-8 h-8" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Business Intelligence</h3>
-                    <p className="text-gray-600 text-sm">Essential data for investors looking into rubber, iron ore, and tourism sectors.</p>
+                    <h3 className="font-bold text-xl mb-3 text-white">Future Ready</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">Providing business intelligence for the next generation of Liberian entrepreneurs and investors.</p>
                 </div>
             </div>
         </div>

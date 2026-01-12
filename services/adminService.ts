@@ -70,10 +70,20 @@ class AdminService {
   }
 
   private updateUserRecord(user: User) {
-    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+    // If updating current user, update their local session too
+    const current = this.getCurrentUser();
+    if (current && current.id === user.id) {
+        localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+    }
+    
     const users = this.getUsers();
     const updatedUsers = users.map(u => u.id === user.id ? user : u);
     localStorage.setItem(KEYS.USERS, JSON.stringify(updatedUsers));
+  }
+
+  private getCurrentUser(): User | null {
+    const user = localStorage.getItem(KEYS.CURRENT_USER);
+    return user ? JSON.parse(user) : null;
   }
 
   generateKey() {
@@ -128,6 +138,11 @@ class AdminService {
 
   submitApiRequest(data: Omit<ApiRequest, 'id' | 'status' | 'timestamp'>) {
     const requests = this.getApiRequests();
+    
+    // Check if pending request already exists for this user/plan
+    const existing = requests.find(r => r.userId === data.userId && r.plan === data.plan && r.status === 'pending');
+    if (existing) return existing;
+
     const newReq: ApiRequest = {
       ...data,
       id: Date.now().toString(),
@@ -145,17 +160,29 @@ class AdminService {
 
   updateApiRequestStatus(id: string, status: 'approved' | 'rejected') {
     const requests = this.getApiRequests();
+    let targetUserId = '';
+    let targetPlan: ApiPlan = 'free';
+
     const updated = requests.map(req => {
       if (req.id === id) {
+        targetUserId = req.userId;
+        targetPlan = req.plan;
+        const apiKey = status === 'approved' ? this.generateKey() : undefined;
         return { 
           ...req, 
           status, 
-          apiKey: status === 'approved' ? this.generateKey() : undefined 
+          apiKey 
         };
       }
       return req;
     });
+
     localStorage.setItem(KEYS.API_REQUESTS, JSON.stringify(updated));
+
+    // If approved, update the actual User record
+    if (status === 'approved' && targetUserId) {
+        this.upgradePlan(targetUserId, targetPlan);
+    }
   }
 
   logDonation(amount: string, method: 'local' | 'international') {
@@ -188,6 +215,12 @@ class AdminService {
     const items = this.getSponsoredContent();
     const newItem = { ...item, id: Date.now().toString() };
     localStorage.setItem(KEYS.SPONSORED, JSON.stringify([newItem, ...items]));
+  }
+
+  updateSponsoredItem(id: string, updates: Partial<SponsoredItem>) {
+    const items = this.getSponsoredContent();
+    const updated = items.map(item => item.id === id ? { ...item, ...updates } : item);
+    localStorage.setItem(KEYS.SPONSORED, JSON.stringify(updated));
   }
 
   deleteSponsoredItem(id: string) {

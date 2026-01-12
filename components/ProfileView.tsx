@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ApiPlan } from '../types';
 import { User as UserIcon, Mail, Calendar, Shield, CreditCard, Edit2, MapPin, Key, Copy, RefreshCw, Eye, EyeOff, BarChart3, Check, Loader2, Zap } from 'lucide-react';
 import { adminService } from '../services/adminService';
@@ -14,11 +14,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user: initialUser }) =
   const [copied, setCopied] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
 
+  // Keep state in sync if prop changes from parent
+  useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
+
   const handleCopy = () => {
     if (user.apiKey) {
-      navigator.clipboard.writeText(user.apiKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      navigator.clipboard.writeText(user.apiKey).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
     }
   };
 
@@ -39,12 +47,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user: initialUser }) =
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 animate-in fade-in duration-500">
-      <div className="mb-8 flex justify-between items-end">
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
             <h1 className="text-3xl font-serif font-bold text-gray-900">Developer Dashboard</h1>
             <p className="text-gray-500 mt-2">Manage your account, API credentials, and usage statistics.</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-full px-4 py-1.5 flex items-center space-x-2 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-full px-4 py-1.5 flex items-center space-x-2 shadow-sm self-start">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             <span className="text-xs font-bold text-gray-700 uppercase">{user.apiPlan} Plan</span>
         </div>
@@ -86,7 +94,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user: initialUser }) =
         {/* Right Column: Details & Stats */}
         <div className="md:col-span-2 space-y-8">
             
-            {/* API Key Management (Step 4) */}
+            {/* API Key Management */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center">
@@ -105,11 +113,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user: initialUser }) =
                                     {showKey ? user.apiKey : '••••••••••••••••••••••••••••••••'}
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <button onClick={() => setShowKey(!showKey)} className="p-2 hover:bg-white rounded-lg transition-colors text-gray-500" title="Toggle Visibility">
+                                    <button 
+                                        onClick={() => setShowKey(!showKey)} 
+                                        className="p-2 hover:bg-white rounded-lg transition-colors text-gray-500" 
+                                        title={showKey ? "Hide Key" : "Show Key"}
+                                    >
                                         {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
-                                    <button onClick={handleCopy} className="p-2 hover:bg-white rounded-lg transition-colors text-gray-500" title="Copy to Clipboard">
-                                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                    <button 
+                                        onClick={handleCopy} 
+                                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all border ${copied ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                                        title="Copy to Clipboard"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <Check className="w-4 h-4" />
+                                                <span className="text-xs font-bold">Copied</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-4 h-4" />
+                                                <span className="text-xs font-bold">Copy Key</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -139,7 +165,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user: initialUser }) =
                 )}
             </div>
 
-            {/* API Monitoring (Step 7) */}
+            {/* API Monitoring */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center">
@@ -184,7 +210,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user: initialUser }) =
                 </div>
             </div>
 
-            {/* Quick Support (Step 10) */}
+            {/* Quick Support */}
             <div className="bg-slate-900 rounded-2xl p-6 text-white flex items-center justify-between">
                 <div>
                     <h4 className="font-bold">Developer Forum</h4>
