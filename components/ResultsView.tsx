@@ -234,15 +234,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
         <div className="h-1 w-20 bg-liberia-red rounded-full"></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         
         {/* Main Content Column */}
-        <div className="lg:col-span-2">
+        <div className="md:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 {/* Main Text */}
                 <div className="p-6 md:p-8">
                     {/* Audio Control Header */}
-                    <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-50 gap-4">
                         <div className="flex items-center space-x-2">
                             <div className="w-2 h-2 rounded-full bg-liberia-blue animate-pulse"></div>
                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">AI Overview</span>
@@ -250,13 +250,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                         <button 
                           onClick={toggleAudio}
                           disabled={loadingAudio}
-                          className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm ${
                             isPlaying 
                               ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100' 
                               : playbackComplete
                                 ? 'bg-green-50 text-green-600 border border-green-100'
                                 : 'bg-blue-50 text-liberia-blue hover:bg-blue-100 border border-blue-100'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          } disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center`}
                         >
                           {loadingAudio ? (
                              <Loader2 className="w-4 h-4 animate-spin" />
@@ -273,7 +273,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                         </button>
                     </div>
 
-                    <div className="prose prose-blue max-w-none text-gray-700 leading-relaxed">
+                    <div className="prose prose-blue max-w-none text-gray-700 leading-relaxed overflow-x-auto">
                         <ReactMarkdown
                         components={{
                             h1: ({node, ...props}) => <h2 className="text-xl font-bold text-liberia-blue mt-6 mb-3" {...props} />,
@@ -283,6 +283,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                             li: ({node, ...props}) => <li className="pl-1" {...props} />,
                             strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
                             a: ({node, ...props}) => <a className="text-liberia-blue hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                            table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-gray-200 border border-gray-100 rounded-lg overflow-hidden" {...props} /></div>,
+                            th: ({node, ...props}) => <th className="bg-gray-50 px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider" {...props} />,
+                            td: ({node, ...props}) => <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 border-t border-gray-50" {...props} />,
                         }}
                         >
                         {result.text}
@@ -306,7 +309,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                                     rel="noreferrer"
                                     className="flex items-start p-3 bg-white rounded-lg border border-gray-200 hover:border-liberia-blue hover:shadow-sm transition-all group"
                                 >
-                                    <div className="mt-1 mr-3 text-gray-400 group-hover:text-liberia-blue">
+                                    <div className="mt-1 mr-3 text-gray-400 group-hover:text-liberia-blue flex-shrink-0">
                                         <ExternalLink className="w-4 h-4" />
                                     </div>
                                     <div className="overflow-hidden">
@@ -320,25 +323,25 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                 )}
 
                 {/* Actions */}
-                <div className="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-end space-x-4">
+                <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex flex-wrap justify-end gap-6">
                     <button 
                         onClick={handleShare}
-                        className="flex items-center text-sm text-gray-600 hover:text-liberia-blue transition-colors"
+                        className="flex items-center text-sm font-medium text-gray-600 hover:text-liberia-blue transition-colors"
                     >
-                        <Share2 className="w-4 h-4 mr-1.5" /> Share
+                        <Share2 className="w-4 h-4 mr-2" /> Share Answer
                     </button>
                     <button 
                     onClick={handleCopyLink}
-                    className="flex items-center text-sm text-gray-600 hover:text-liberia-blue transition-colors relative"
+                    className="flex items-center text-sm font-medium text-gray-600 hover:text-liberia-blue transition-colors relative"
                     >
                     {showCopied ? (
                         <>
-                        <Check className="w-4 h-4 mr-1.5 text-green-600" />
-                        <span className="text-green-600 font-medium">Copied!</span>
+                        <Check className="w-4 h-4 mr-2 text-green-600" />
+                        <span className="text-green-600">Link Copied!</span>
                         </>
                     ) : (
                         <>
-                        <LinkIcon className="w-4 h-4 mr-1.5" /> Copy Link
+                        <LinkIcon className="w-4 h-4 mr-2" /> Copy Share Link
                         </>
                     )}
                     </button>
@@ -347,7 +350,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
         </div>
 
         {/* Sidebar Column for Ads & Growth */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="md:col-span-1 space-y-6">
             
             {/* Sponsored Ad Mockup */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative group">
@@ -359,8 +362,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                 </div>
                 <div className="p-4">
                     <h4 className="font-bold text-gray-900 mb-1">The Royal Grand Hotel</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Experience world-class luxury in the heart of Monrovia. Book your stay today for exclusive business rates.</p>
-                    <button className="w-full py-2 bg-liberia-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 transition-colors">
+                    <p className="text-xs text-gray-600 mb-4 line-clamp-2">Experience world-class luxury in the heart of Monrovia. Book your stay today for exclusive business rates.</p>
+                    <button className="w-full py-2 bg-liberia-blue text-white rounded-lg text-sm font-bold hover:bg-blue-900 transition-colors shadow-sm">
                         Book Now
                     </button>
                 </div>
@@ -371,10 +374,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
                 <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>
                 <div className="flex items-center mb-3">
                    <GraduationCap className="w-5 h-5 text-liberia-gold mr-2" />
-                   <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Knowledge Partner</h4>
+                   <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Knowledge Partner</h4>
                 </div>
-                <p className="text-sm text-gray-300 mb-3">
-                    Historical data cross-referenced with the <strong>University of Liberia</strong> digital archives.
+                <p className="text-xs text-gray-300 mb-4 leading-relaxed">
+                    Historical data cross-referenced with the <strong>University of Liberia</strong> digital archives for maximum academic accuracy.
                 </p>
                 <div className="h-1 w-full bg-gray-700 rounded-full overflow-hidden">
                     <div className="h-full bg-liberia-gold w-3/4"></div>
@@ -382,15 +385,17 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
             </div>
 
             {/* Tourism / Business Directory Promo */}
-            <div className="bg-blue-50 rounded-xl border border-blue-100 p-5">
+            <div className="bg-blue-50 rounded-xl border border-blue-100 p-5 group cursor-pointer hover:bg-blue-100 transition-colors">
                 <div className="flex items-start">
-                    <div className="p-2 bg-blue-100 rounded-lg text-liberia-blue mr-3">
+                    <div className="p-2 bg-blue-100 rounded-lg text-liberia-blue mr-3 group-hover:bg-white transition-colors">
                         <Star className="w-5 h-5" />
                     </div>
                     <div>
                         <h4 className="font-bold text-gray-900 text-sm">Business Directory</h4>
-                        <p className="text-xs text-gray-600 mt-1 mb-3">Looking for verified businesses in Montserrado or Nimba?</p>
-                        <a href="#" className="text-xs font-bold text-liberia-blue hover:underline">Browse Directory &rarr;</a>
+                        <p className="text-[11px] text-gray-600 mt-1 mb-3">Looking for verified businesses in Montserrado or Nimba?</p>
+                        <a href="#" className="text-xs font-bold text-liberia-blue flex items-center group-hover:translate-x-1 transition-transform">
+                            Browse Directory <Check className="w-3 h-3 ml-1" />
+                        </a>
                     </div>
                 </div>
             </div>
@@ -399,16 +404,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ query, result, onBusin
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
                 <div className="flex items-center mb-3">
                     <Info className="w-4 h-4 text-gray-400 mr-2" />
-                    <h4 className="text-xs font-bold text-gray-500 uppercase">Developers</h4>
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">For Developers</h4>
                 </div>
-                <p className="text-sm text-gray-700 mb-4">
-                    Building an app for Liberia? Access our history and data via our JSON API.
+                <p className="text-xs text-gray-700 mb-4 leading-relaxed">
+                    Building an app for Liberia? Access our curated history and regional data via our high-speed JSON API.
                 </p>
                 <button 
                     onClick={onBusinessClick}
-                    className="w-full py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 hover:border-liberia-blue hover:text-liberia-blue transition-colors"
+                    className="w-full py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 hover:border-liberia-blue hover:text-liberia-blue hover:bg-blue-50 transition-all"
                 >
-                    Get API Key
+                    Get API Credentials
                 </button>
             </div>
 

@@ -1,55 +1,43 @@
+# 🚀 Deploying AskLiberia to Vercel via GitHub
 
-# 🚀 Deployment Guide for AskLiberia
+Follow these steps to deploy the AskLiberia National Knowledge Engine. This setup ensures your Gemini API key remains secure and the application performs optimally.
 
-This guide explains how to deploy AskLiberia to production using **Vercel** (Recommended).
+## 1. Prepare Your Repository
+1. Ensure all files are in the root directory of your GitHub repository (no nested `src` folder as per project structure).
+2. Verify your `package.json` has the necessary build scripts:
+   ```json
+   "scripts": {
+     "dev": "vite",
+     "build": "tsc && vite build",
+     "preview": "vite preview"
+   }
+   ```
 
----
+## 2. Connect to Vercel
+1. Log in to [Vercel](https://vercel.com).
+2. Click **"Add New..."** and select **"Project"**.
+3. Import your GitHub repository.
 
-## 🔑 Phase 1: Environment Configuration
+## 3. Configure Build Settings
+Vercel should auto-detect Vite, but ensure these settings are correct:
+- **Framework Preset:** Vite
+- **Root Directory:** `./`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
 
-To make the app work in production, you must provide your Gemini API key to Vercel.
+## 4. Set Environment Variables (CRITICAL)
+Your app requires an API Key to function. **Do not hardcode it.**
+1. In the Vercel project setup, find the **Environment Variables** section.
+2. Add a new variable:
+   - **Key:** `API_KEY`
+   - **Value:** `YOUR_GEMINI_API_KEY_HERE`
+3. Click **Add**.
 
-**On Vercel Dashboard:**
-1.  Go to your project Settings.
-2.  Click on **Environment Variables**.
-3.  Add the following:
+## 5. Deploy
+1. Click **Deploy**. Vercel will build your TypeScript files and bundle the application.
+2. Once finished, Vercel will provide a production URL (e.g., `ask-liberia.vercel.app`).
 
-| Key | Value |
-| :--- | :--- |
-| `VITE_API_KEY` | `AIza...` (Your actual API Key from Google AI Studio) |
-
-> **Important:** The key name must be exactly `VITE_API_KEY` for the app to read it safely in the browser.
-
----
-
-## ☁️ Phase 2: Deploying to Vercel
-
-1.  **Push to GitHub**:
-    *   Ensure your code is in a GitHub repository.
-    *   You do **not** need to move files into a `src/` folder. The app is configured to work with the files in the root directory.
-
-2.  **Import Project in Vercel**:
-    *   Go to [vercel.com](https://vercel.com).
-    *   Click **"Add New..."** -> **"Project"**.
-    *   Select your GitHub repository.
-
-3.  **Build Settings (Auto-detected)**:
-    *   Vercel should automatically detect "Vite".
-    *   Build Command: `npm run build` (or `vite build`)
-    *   Output Directory: `dist`
-
-4.  **Deploy**:
-    *   Click **Deploy**.
-    *   Wait for the build to finish. If you see a "White Screen", check the console for errors, but the `vite.config.ts` included in this project should fix standard path issues.
-
----
-
-## 🛠️ Troubleshooting
-
-*   **"Build failed - Failed to resolve /src/index.tsx"**:
-    *   This means `index.html` is pointing to a file that doesn't exist.
-    *   **Fix:** Ensure `index.html` has `<script type="module" src="/index.tsx"></script>` (pointing to root) and NOT `/src/index.tsx`.
-
-*   **"API Key Missing"**:
-    *   Check that you added `VITE_API_KEY` in Vercel Environment Variables.
-    *   Ensure you did not wrap the key in quotes.
+## 🛠️ Important Notes for this Project
+- **API Key Security:** By using Vercel's Environment Variables and the `define` config in `vite.config.ts`, your key is injected at build time. 
+- **Geolocation:** If you implement Maps grounding later, remember that Vercel's production URL must be served over HTTPS (which Vercel handles automatically) for browser geolocation to work.
+- **Microphone Access:** Ensure you have added the necessary permissions in `metadata.json` so the browser prompts the user correctly on your live URL.
