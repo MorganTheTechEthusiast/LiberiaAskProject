@@ -1,43 +1,53 @@
-# 🚀 Deploying AskLiberia to Vercel via GitHub
 
-Follow these steps to deploy the AskLiberia National Knowledge Engine. This setup ensures your Gemini API key remains secure and the application performs optimally.
+# 🚀 Hosting AskLiberia on Vercel (Step-by-Step)
 
-## 1. Prepare Your Repository
-1. Ensure all files are in the root directory of your GitHub repository (no nested `src` folder as per project structure).
-2. Verify your `package.json` has the necessary build scripts:
-   ```json
-   "scripts": {
-     "dev": "vite",
-     "build": "tsc && vite build",
-     "preview": "vite preview"
-   }
+Follow these precise steps to get your Liberian Search Engine live on the web using Vercel and GitHub.
+
+## Step 1: Push Code to GitHub
+1. Create a new repository on [GitHub](https://github.com/new).
+2. Initialize your local project folder:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit: AskLiberia Search Engine"
+   ```
+3. Link your local folder to GitHub and push:
+   ```bash
+   git remote add origin https://github.com/your-username/your-repo-name.git
+   git branch -M main
+   git push -u origin main
    ```
 
-## 2. Connect to Vercel
-1. Log in to [Vercel](https://vercel.com).
+## Step 2: Connect Vercel to GitHub
+1. Go to the [Vercel Dashboard](https://vercel.com/dashboard).
 2. Click **"Add New..."** and select **"Project"**.
-3. Import your GitHub repository.
+3. Find your GitHub repository in the list and click **"Import"**.
 
-## 3. Configure Build Settings
-Vercel should auto-detect Vite, but ensure these settings are correct:
-- **Framework Preset:** Vite
-- **Root Directory:** `./`
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
+## Step 3: Configure Build & Environment Variables
+Before clicking Deploy, you must set up the project configuration:
 
-## 4. Set Environment Variables (CRITICAL)
-Your app requires an API Key to function. **Do not hardcode it.**
-1. In the Vercel project setup, find the **Environment Variables** section.
-2. Add a new variable:
-   - **Key:** `API_KEY`
-   - **Value:** `YOUR_GEMINI_API_KEY_HERE`
-3. Click **Add**.
+1. **Build Settings**:
+   - Vercel should automatically detect **Vite**.
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
 
-## 5. Deploy
-1. Click **Deploy**. Vercel will build your TypeScript files and bundle the application.
-2. Once finished, Vercel will provide a production URL (e.g., `ask-liberia.vercel.app`).
+2. **Environment Variables**:
+   - Scroll down to the **Environment Variables** section.
+   - Add the following:
+     - **Key**: `API_KEY`
+     - **Value**: `[Your Google Gemini API Key]`
+   - *Note: This key is required for the Search Engine and TTS features to function.*
 
-## 🛠️ Important Notes for this Project
-- **API Key Security:** By using Vercel's Environment Variables and the `define` config in `vite.config.ts`, your key is injected at build time. 
-- **Geolocation:** If you implement Maps grounding later, remember that Vercel's production URL must be served over HTTPS (which Vercel handles automatically) for browser geolocation to work.
-- **Microphone Access:** Ensure you have added the necessary permissions in `metadata.json` so the browser prompts the user correctly on your live URL.
+## Step 4: Finalize Deployment
+1. Click **"Deploy"**.
+2. Wait 1-2 minutes for the build to complete.
+3. Once finished, click the **"Visit"** button or the provided URL (e.g., `https://ask-liberia.vercel.app`).
+
+## Step 5: Updating the App
+To update your live site in the future:
+1. Make changes to your code locally.
+2. Run `git add .`, `git commit -m "Update"`, and `git push`.
+3. Vercel will automatically detect the push and redeploy your site within seconds.
+
+---
+**Security Warning**: Never share your `.env` file or hardcode your `API_KEY` directly into `services/geminiService.ts`. Always use the Vercel Dashboard for secret management.
