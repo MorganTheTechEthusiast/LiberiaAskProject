@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { authService } from '../services/authService';
 import { User } from '../types';
-import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { LogoIcon } from './LogoIcon';
 
 // Declare google global for TypeScript
 declare const google: any;
@@ -16,17 +17,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleLoaded, setGoogleLoaded] = useState(false);
-  const [recentUsers, setRecentUsers] = useState<User[]>([]);
   
-  // Form State
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   
-  // Ref to track if we've already initialized the button to prevent double renders
   const buttonInitialized = useRef(false);
+  
+  // CRITICAL: The ID must end in .apps.googleusercontent.com
+  const clientId = process.env.VITE_GOOGLE_CLIENT_ID || "";
 
-  // JWT Decoder for Google Credentials
+  // Helper to decode the Google JWT Token
   const parseJwt = (token: string) => {
     try {
       const base64Url = token.split('.')[1];
@@ -36,339 +37,221 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
       }).join(''));
       return JSON.parse(jsonPayload);
     } catch (e) {
-      console.error("JWT Parse Error", e);
       return null;
     }
   };
 
   const handleGoogleCredentialResponse = async (response: any) => {
       setIsLoading(true);
-      setError('');
       try {
           const data = parseJwt(response.credential);
           if (data) {
-              console.log("Google Auth Data:", data); // Debug log
               const user = await authService.loginWithProvider({
                   name: data.name,
                   email: data.email,
-                  avatar: data.picture, // Capture Google Profile Picture
+                  avatar: data.picture,
                   id: data.sub
               });
               onLoginSuccess(user);
-          } else {
-              setError("Failed to verify Google account details.");
-              setIsLoading(false);
           }
       } catch (err) {
-          console.error(err);
-          setError("Google authentication failed. Please try again.");
+          setError("Google Sign-In failed.");
           setIsLoading(false);
       }
   };
 
+  const handleDemoGoogleLogin = async () => {
+    setIsLoading(true);
+    // Simulate a brief delay to look like a real login
+    const user = await authService.loginWithGoogleSimulation();
+    onLoginSuccess(user);
+  };
+
   useEffect(() => {
-    // Fetch existing users for social proof
-    const users = authService.getUsers();
-    if (users.length > 0) {
-        // Show last 5 active users
-        const sorted = [...users].sort((a, b) => b.joinedAt - a.joinedAt).slice(0, 5);
-        setRecentUsers(sorted);
-    }
-
-    // Check if Google script is loaded
-    let intervalId: any;
-    let timeoutId: any;
-
     const initializeGoogle = () => {
-        if (typeof google !== 'undefined' && !buttonInitialized.current) {
-            setGoogleLoaded(true);
-            
+        // Only initialize if we have a valid-looking client ID
+        if (typeof google !== 'undefined' && clientId.includes('.apps.googleusercontent.com') && !buttonInitialized.current) {
             try {
-                // Get Client ID from env
-                const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
-
-                if (clientId) {
-                    google.accounts.id.initialize({
-                        client_id: clientId,
-                        callback: handleGoogleCredentialResponse
-                    });
-                    
-                    const btnDiv = document.getElementById("googleSignInDiv");
-                    if (btnDiv) {
-                        google.accounts.id.renderButton(
-                            btnDiv,
-                            { theme: "outline", size: "large", width: "100%", text: isLogin ? "signin_with" : "signup_with" }
-                        );
-                        buttonInitialized.current = true;
-                    }
-                } else {
-                    console.warn("VITE_GOOGLE_CLIENT_ID missing. Running in Demo/Simulation mode.");
-                    setGoogleLoaded(false); // Falls back to demo button
-                }
+                google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleGoogleCredentialResponse
+                });
+                setGoogleLoaded(true);
+                buttonInitialized.current = true;
             } catch (e) {
-                console.error("Google Auth Initialization Error:", e);
-                setGoogleLoaded(false);
+                console.error("Google Init Error", e);
             }
         }
     };
 
-    // Attempt to initialize
-    initializeGoogle();
+    const timer = setInterval(() => {
+        if (typeof google !== 'undefined' && clientId) {
+            initializeGoogle();
+            clearInterval(timer);
+        }
+    }, 500);
 
-    // If not loaded yet, poll for it
-    if (typeof google === 'undefined') {
-        intervalId = setInterval(() => {
-            if (typeof google !== 'undefined') {
-                clearInterval(intervalId);
-                initializeGoogle();
-            }
-        }, 200);
-
-        // Stop polling after 5 seconds to avoid infinite loops if network fails
-        timeoutId = setTimeout(() => {
-            clearInterval(intervalId);
-        }, 5000);
-    }
-
-    return () => {
-        clearInterval(intervalId);
-        clearTimeout(timeoutId);
-    };
-  }, [isLogin]); // Re-run if isLogin changes to update button text (signin/signup)
+    return () => clearInterval(timer);
+  }, [clientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
     try {
       if (isLogin) {
         const result = await authService.login(email, password);
-        if (result.success && result.user) {
-          onLoginSuccess(result.user);
-        } else {
-          setError(result.message || 'Login failed');
-        }
+        if (result.success && result.user) onLoginSuccess(result.user);
+        else setError(result.message || 'Invalid email or password.');
       } else {
-        if (!name) {
-           setError("Please enter your full name");
-           setIsLoading(false);
-           return;
-        }
         const result = await authService.signup(name, email, password);
-        if (result.success && result.user) {
-          onLoginSuccess(result.user);
-        } else {
-          setError(result.message || 'Signup failed');
-        }
+        if (result.success && result.user) onLoginSuccess(result.user);
+        else setError(result.message || 'Signup failed');
       }
     } catch (err) {
-      setError('An unexpected error occurred.');
+      setError('Connection error.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fallback for Dev Mode without Client ID
-  const handleSimulatedGoogleLogin = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-        const user = await authService.loginWithGoogleSimulation();
-        onLoginSuccess(user);
-    } catch (err) {
-        setError("Google simulation failed");
-        setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen w-full flex bg-gray-50">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex w-1/2 bg-liberia-blue text-white flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1547983539-f90147f7d52a?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center"></div>
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-white">
+      
+      {/* Left Panel - Brand */}
+      <div className="w-full md:w-[50%] bg-[#002868] p-12 md:p-20 flex flex-col justify-between text-white relative min-h-[400px]">
         <div className="relative z-10">
-           <div className="flex items-center space-x-3">
-             <div className="p-2 bg-white rounded-lg shadow-md">
-                <div className="flex -space-x-1">
-                    <div className="w-3 h-6 bg-liberia-blue rounded-l-sm"></div>
-                    <div className="w-3 h-6 bg-white"></div>
-                    <div className="w-3 h-6 bg-liberia-red rounded-r-sm"></div>
-                </div>
+          <div className="flex items-center space-x-4 mb-24">
+             <LogoIcon size="md" />
+             <span className="text-2xl font-serif font-bold tracking-tight">AskLiberia</span>
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-serif font-bold leading-[1.1] mb-10">
+            Unlock the <br/>Knowledge of <br/>Liberia.
+          </h1>
+          
+          <p className="text-xl text-blue-100/80 max-w-md leading-relaxed mb-12 font-sans">
+            Join thousands of students, researchers, and travelers accessing verified history, culture, and business data.
+          </p>
+
+          <div className="flex items-center space-x-4">
+             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold border border-white/20 text-xs">
+               LIB
              </div>
-             <span className="text-2xl font-serif font-bold">AskLiberia</span>
-           </div>
-        </div>
-        
-        <div className="relative z-10 max-w-lg">
-           <h1 className="text-5xl font-serif font-bold mb-6">Unlock the Knowledge of Liberia.</h1>
-           <p className="text-blue-100 text-lg leading-relaxed">
-             Join thousands of students, researchers, and travelers accessing verified history, culture, and business data.
-           </p>
-           <div className="mt-8 flex space-x-4">
-              <div className="flex -space-x-4">
-                 {recentUsers.length > 0 ? (
-                     recentUsers.map((u) => (
-                         <img 
-                             key={u.id}
-                             src={u.avatar}
-                             alt={u.name}
-                             title={u.name}
-                             className="w-10 h-10 rounded-full border-2 border-liberia-blue bg-white object-cover"
-                         />
-                     ))
-                 ) : (
-                    [1,2,3,4].map(i => (
-                        <div key={i} className="w-10 h-10 rounded-full border-2 border-liberia-blue bg-gray-300 flex items-center justify-center">
-                            <UserIcon className="w-5 h-5 text-gray-400" />
-                        </div>
-                    ))
-                 )}
-              </div>
-              <p className="flex items-center text-sm font-medium">
-                 Join the community today.
-              </p>
-           </div>
+             <span className="font-medium text-white/90 font-sans">Join the community today.</span>
+          </div>
         </div>
 
-        <div className="relative z-10 text-xs text-blue-200">
-           &copy; {new Date().getFullYear()} AskLiberia Knowledge Engine.
+        <div className="relative z-10 pt-12 text-sm text-white/30 font-sans">
+           © 2025 AskLiberia Knowledge Engine.
         </div>
       </div>
 
-      {/* Right Side - Auth Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
+      {/* Right Panel - Auth */}
+      <div className="w-full md:w-[50%] flex items-center justify-center p-8 md:p-16 bg-white overflow-y-auto">
         <div className="w-full max-w-md space-y-8">
             <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-900">
-                    {isLogin ? 'Welcome back' : 'Create an account'}
-                </h2>
-                <p className="mt-2 text-gray-600">
-                    {isLogin ? 'Enter your details to access your dashboard.' : 'Start your journey with AskLiberia today.'}
-                </p>
+                <h2 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">Welcome back</h2>
+                <p className="text-gray-500 font-medium">Enter your details to access your dashboard.</p>
             </div>
 
-            {/* Error Banner */}
             {error && (
-                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start animate-in slide-in-from-top-2">
-                    <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                <div className="p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex items-center animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
                     <span>{error}</span>
                 </div>
             )}
 
-            {/* Google Button Section */}
-            <div className="min-h-[50px] flex flex-col items-center justify-center relative">
-                 {/* This div is where Google renders the button */}
-                 <div id="googleSignInDiv" className={googleLoaded ? 'w-full h-[44px]' : 'hidden'}></div>
-                 
-                 {/* Fallback Button if Key is missing or Script fails */}
-                 {!googleLoaded && (
+            <div className="space-y-6">
+                <div className="space-y-3">
                     <button 
                         type="button"
-                        onClick={handleSimulatedGoogleLogin}
+                        onClick={() => {
+                            if (googleLoaded) google.accounts.id.prompt();
+                            else handleDemoGoogleLogin();
+                        }}
                         disabled={isLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors relative group"
+                        className="w-full flex items-center justify-center px-4 py-3.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-[0.99]"
                     >
-                         <div className="absolute left-4">
-                             <svg className="h-5 w-5" viewBox="0 0 24 24">
-                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                <path d="M5.84 14.17c-.22-.66-.35-1.36-.35-2.17s.13-1.51.35-2.17V7.96H2.18C.79 10.73 0 13.83 0 17c0 3.17.79 6.27 2.18 9.04l3.66-2.87z" fill="#FBBC05" />
-                                <path d="M12 4.81c1.61 0 3.09.55 4.26 1.67l3.18-3.18C17.46 1.47 14.97 0 12 0 7.7 0 3.99 2.47 2.18 5.96l3.66 2.87c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                            </svg>
-                         </div>
-                        {isLoading ? 'Authenticating...' : isLogin ? 'Sign in with Google (Demo)' : 'Sign up with Google (Demo)'}
+                        <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span className="font-semibold text-gray-700">
+                           {googleLoaded ? 'Sign in with Google' : 'Sign in with Google (Demo)'}
+                        </span>
                     </button>
-                 )}
-                 {!googleLoaded && !isLoading && (
-                     <div className="text-[10px] text-gray-400 mt-2">
-                         (Note: Add VITE_GOOGLE_CLIENT_ID to env to enable real Google Auth)
-                     </div>
-                 )}
-            </div>
-
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-gray-50 text-gray-500">Or continue with email</span>
-                </div>
-            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <div className="relative">
-                            <UserIcon className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-gray-100"></div>
+                    <span className="flex-shrink mx-6 text-sm text-gray-400 font-medium font-sans">Or use your email</span>
+                    <div className="flex-grow border-t border-gray-100"></div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {!isLogin && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-gray-700 ml-1">Full Name</label>
                             <input 
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-liberia-blue focus:border-liberia-blue outline-none"
-                                placeholder="John Doe"
+                                type="text" 
+                                value={name} 
+                                onChange={(e) => setName(e.target.value)} 
+                                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-xl focus:border-[#002868] focus:ring-1 focus:ring-[#002868] outline-none transition-all placeholder-gray-300 font-medium" 
+                                placeholder="Your Name" 
+                            />
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 ml-1">Email Address</label>
+                        <div className="relative flex items-center">
+                            <Mail className="absolute left-4 w-5 h-5 text-gray-300" />
+                            <input 
+                                type="email" 
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)} 
+                                required 
+                                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl focus:border-[#002868] focus:ring-1 focus:ring-[#002868] outline-none transition-all placeholder-gray-300 font-medium" 
+                                placeholder="you@example.com" 
                             />
                         </div>
                     </div>
-                )}
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                        <input 
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-liberia-blue focus:border-liberia-blue outline-none"
-                            placeholder="you@example.com"
-                        />
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 ml-1">Password</label>
+                        <div className="relative flex items-center">
+                            <Lock className="absolute left-4 w-5 h-5 text-gray-300" />
+                            <input 
+                                type="password" 
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                required 
+                                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl focus:border-[#002868] focus:ring-1 focus:ring-[#002868] outline-none transition-all placeholder-gray-300 font-medium" 
+                                placeholder="••••••••" 
+                            />
+                        </div>
                     </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={isLoading} 
+                        className="w-full flex items-center justify-center py-4 bg-[#002868] text-white font-bold rounded-xl hover:bg-blue-900 transition-all shadow-md active:scale-[0.98] mt-2"
+                    >
+                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="flex items-center text-lg">{isLogin ? 'Sign In' : 'Sign Up'} <ArrowRight className="w-5 h-5 ml-2" /></span>}
+                    </button>
+                </form>
+
+                <div className="text-center pt-4">
+                    <p className="text-base text-gray-500 font-medium font-sans">
+                        {isLogin ? "Don't have an account?" : "Already have an account?"}
+                        <button onClick={() => setIsLogin(!isLogin)} className="ml-2 font-bold text-[#002868] hover:underline">
+                            {isLogin ? 'Sign up' : 'Sign in'}
+                        </button>
+                    </p>
                 </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                        <input 
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-liberia-blue focus:border-liberia-blue outline-none"
-                            placeholder="••••••••"
-                        />
-                    </div>
-                </div>
-
-                <button 
-                    type="submit" 
-                    disabled={isLoading}
-                    className="w-full flex items-center justify-center py-3 bg-liberia-blue text-white font-bold rounded-xl hover:bg-blue-900 transition-colors disabled:opacity-70"
-                >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                        <>
-                           {isLogin ? 'Sign In' : 'Create Account'} <ArrowRight className="w-4 h-4 ml-2" />
-                        </>
-                    )}
-                </button>
-            </form>
-
-            <div className="text-center text-sm">
-                <span className="text-gray-600">
-                    {isLogin ? "Don't have an account? " : "Already have an account? "}
-                </span>
-                <button 
-                    onClick={() => {
-                        setIsLogin(!isLogin);
-                        setError('');
-                    }}
-                    className="font-bold text-liberia-blue hover:underline"
-                >
-                    {isLogin ? 'Sign up for free' : 'Log in'}
-                </button>
             </div>
         </div>
       </div>

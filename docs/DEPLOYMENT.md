@@ -35,19 +35,21 @@ Before clicking Deploy, you must set up the project configuration:
    - Scroll down to the **Environment Variables** section.
    - Add the following:
      - **Key**: `API_KEY`
-     - **Value**: `[Your Google Gemini API Key]`
-   - *Note: This key is required for the Search Engine and TTS features to function.*
+     - **Value**: `[Your Google Gemini API Key from AI Studio]`
+     - **Key**: `VITE_GOOGLE_CLIENT_ID`
+     - **Value**: `[Your OAuth Client ID from Google Cloud Console]`
 
 ## Step 4: Finalize Deployment
 1. Click **"Deploy"**.
 2. Wait 1-2 minutes for the build to complete.
-3. Once finished, click the **"Visit"** button or the provided URL (e.g., `https://ask-liberia.vercel.app`).
+3. Once finished, click the **"Visit"** button.
 
-## Step 5: Updating the App
-To update your live site in the future:
-1. Make changes to your code locally.
-2. Run `git add .`, `git commit -m "Update"`, and `git push`.
-3. Vercel will automatically detect the push and redeploy your site within seconds.
+## Step 5: Update Google Cloud (Crucial!)
+1. Copy your new live Vercel URL (e.g., `https://ask-liberia.vercel.app`).
+2. Go to [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
+3. Edit your OAuth Client ID.
+4. Add your Vercel URL to **"Authorized JavaScript origins"**.
+5. Save. It may take 5 minutes for Google to update.
 
 ---
-**Security Warning**: Never share your `.env` file or hardcode your `API_KEY` directly into `services/geminiService.ts`. Always use the Vercel Dashboard for secret management.
+**Security Warning**: Never share your `.env` file. Always use the Vercel Dashboard for secret management.

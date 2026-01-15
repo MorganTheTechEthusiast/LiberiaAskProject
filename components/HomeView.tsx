@@ -4,6 +4,7 @@ import { SearchBar } from './SearchBar';
 import { Category, Language, SponsoredItem } from '../types';
 import { adminService } from '../services/adminService';
 import { Landmark, BookOpen, GraduationCap, Briefcase, Flag, Map, Users, Music, Loader2, ArrowRight } from 'lucide-react';
+import { LogoIcon } from './LogoIcon';
 
 interface HomeViewProps {
   onSearch: (query: string) => void;
@@ -38,45 +39,42 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
   }, []);
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full bg-white">
       
-      {/* Hero Section - Matching the Image Design Exactly */}
-      <div className="w-full bg-[#002868] text-white py-16 md:py-24 px-4 relative overflow-hidden">
-        <div className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center">
+      {/* Hero Section - Restored to the Exact 'Look Design' Screenshot */}
+      <div className="w-full bg-[#002868] text-white py-14 md:py-28 px-4 relative overflow-hidden flex flex-col items-center">
+        {/* Subtle subtle gradient depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#001c4a] to-[#002868]"></div>
+        
+        <div className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center w-full">
             
-            {/* Centered Large Logo Icon */}
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl shadow-xl mb-8 flex items-center justify-center animate-in zoom-in duration-500">
-                <div className="grid grid-cols-2 grid-rows-2 w-10 h-10 md:w-12 md:h-12 overflow-hidden rounded-md border border-gray-100">
-                    <div className="bg-[#002868] flex items-center justify-center">
-                         <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                    <div className="bg-[#BF0A30]"></div>
-                    <div className="bg-white"></div>
-                    <div className="bg-[#BF0A30]"></div>
-                </div>
+            {/* Centered Minimalist Logo Box */}
+            <div className="mb-10 animate-in zoom-in duration-500">
+                <LogoIcon size="xl" />
             </div>
 
-            {/* Knowledge Engine Badge */}
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-5 py-2 rounded-full border border-white/20 mb-10">
-                <span className="w-2 h-2 bg-[#BF0A30] rounded-full animate-pulse"></span>
-                <span className="text-xs md:text-sm font-bold tracking-tight text-white/90">
+            {/* Knowledge Engine Badge - Matches Screenshot Pill Style */}
+            <div className="inline-flex items-center space-x-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 mb-12 shadow-inner">
+                <span className="w-2 h-2 bg-liberia-red rounded-full animate-pulse shadow-[0_0_8px_rgba(191,10,48,0.8)]"></span>
+                <span className="text-[11px] md:text-sm font-bold tracking-tight text-white uppercase md:normal-case">
                     The First Centralized Digital Knowledge Engine for Liberia
                 </span>
             </div>
 
-            {/* Main Heading */}
-            <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight mb-8">
-              Discover <span className="text-[#FFD700] font-sans">Liberia</span>
+            {/* Main Heading - Matches Screenshot Mixed Font Style */}
+            <h1 className="text-[2.75rem] md:text-7xl mb-8 tracking-tight font-bold">
+              <span className="font-serif text-white">Discover </span>
+              <span className="font-sans text-[#FFD700]">Liberia</span>
             </h1>
 
-            {/* Subheading Text */}
-            <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed mb-12 px-4">
+            {/* Subheading Text - Matches Screenshot Spacing/Line Height */}
+            <p className="text-base md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed mb-14 px-2 font-sans">
               Access verified information about history, culture, government, and business. 
               Your gateway to the Grain Coast.
             </p>
             
             {/* The Integrated Search Bar Wrapper */}
-            <div className="w-full max-w-3xl mx-auto">
+            <div className="w-full max-w-3xl mx-auto mb-4">
               <SearchBar 
                 onSearch={onSearch} 
                 className="shadow-2xl" 
@@ -89,35 +87,34 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
         </div>
       </div>
 
-      {/* Categories Grid - Preserved for functionality */}
-      <div className="max-w-7xl mx-auto px-4 py-20 w-full">
-        <div className="text-center mb-16">
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Knowledge Categories</h2>
-            <div className="h-1 w-16 bg-liberia-red mx-auto mt-4 rounded-full"></div>
+      {/* Categories Grid - Responsive Layout */}
+      <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 w-full">
+        <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-3xl md:text-[2.5rem] font-serif font-bold text-slate-900 leading-tight">Knowledge Categories</h2>
+            <div className="h-1 w-12 bg-liberia-red mx-auto mt-5 rounded-full"></div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {CATEGORIES.map((cat, index) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          {CATEGORIES.map((cat) => {
             const Icon = IconMap[cat.icon];
             return (
               <button
                 key={cat.id}
                 onClick={() => onSearch(cat.promptPrefix)}
-                className="group relative flex flex-col items-start p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm transition-all duration-500 ease-out hover:-translate-y-3 hover:shadow-2xl hover:shadow-liberia-blue/15 hover:border-liberia-blue/30 text-left overflow-hidden"
+                className="group relative flex flex-col items-start p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-liberia-blue/20 text-left overflow-hidden active:scale-95"
               >
-                <div className="relative p-4 bg-slate-50 text-liberia-blue rounded-2xl mb-6 group-hover:bg-liberia-blue group-hover:text-liberia-gold transition-all duration-500">
+                <div className="relative p-4 bg-slate-50 text-liberia-blue rounded-2xl mb-6 group-hover:bg-liberia-blue group-hover:text-liberia-gold transition-colors duration-300">
                   <Icon className="w-7 h-7" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-liberia-blue transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {cat.name}
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed mb-6">
                   {cat.description}
                 </p>
-                <div className="mt-auto flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-liberia-blue group-hover:text-white flex items-center justify-center transition-all duration-500">
-                        <ArrowRight className="w-4 h-4" />
-                    </div>
+                <div className="mt-auto flex items-center space-x-2 text-liberia-blue font-bold text-xs uppercase tracking-widest">
+                    <span>Explore</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             );
@@ -127,10 +124,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
 
       {/* Featured / Sponsored Section */}
       <div className="max-w-7xl mx-auto px-4 mb-24 w-full">
-        <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900">Featured Spotlights</h2>
-            </div>
+        <div className="flex items-center justify-between mb-10 border-b border-gray-100 pb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Featured Spotlights</h2>
+            <button className="text-sm font-bold text-liberia-blue hover:underline">View All</button>
         </div>
         
         {loadingContent ? (
@@ -138,13 +134,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSearch, selectedCounty, on
                 <Loader2 className="w-10 h-10 animate-spin text-liberia-blue" />
             </div>
         ) : (
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {featuredContent.map((item) => (
-                    <div key={item.id} className="relative group overflow-hidden rounded-[2.5rem] shadow-md cursor-pointer bg-slate-900 border border-gray-100">
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent z-10"></div>
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-1000 ease-out opacity-80" />
+                    <div key={item.id} className="relative group overflow-hidden rounded-[2.5rem] shadow-md cursor-pointer bg-slate-900 border border-gray-100 min-h-[340px]">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent z-10"></div>
+                        <img src={item.imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out opacity-70" />
                         <div className="absolute bottom-0 left-0 p-8 z-20 text-white w-full">
-                            <span className="text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest bg-liberia-gold text-liberia-blue mb-3 inline-block">{item.tag}</span>
+                            <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest bg-liberia-gold text-liberia-blue mb-3 inline-block shadow-lg">{item.tag}</span>
                             <h3 className="text-2xl font-bold mb-2 leading-tight">{item.title}</h3>
                             <div className="flex items-center space-x-2 text-xs font-bold text-liberia-gold group-hover:translate-x-1 transition-transform">
                                 <span>{item.buttonText || 'Discover More'}</span>
