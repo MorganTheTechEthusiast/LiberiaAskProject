@@ -26,8 +26,8 @@ const App: React.FC = () => {
   const [selectedCounty, setSelectedCounty] = useState<string>('All Liberia');
   const [language, setLanguage] = useState<Language>('English');
   
-  // Guard to prevent multiple searches firing at once
   const searchInProgress = useRef(false);
+  const mainContentRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const user = authService.getCurrentUser();
@@ -76,7 +76,6 @@ const App: React.FC = () => {
                 setLoading(false);
                 firstChunkReceived = true;
             }
-            // Stream the text immediately for "fast" feel
             setSearchResult(data);
         });
         setSearchResult(result);
@@ -98,27 +97,31 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAboutClick = () => { setViewState(ViewState.ABOUT); window.scrollTo({ top: 0 }); };
-  const handleBusinessClick = () => { setViewState(ViewState.BUSINESS); window.scrollTo({ top: 0 }); };
-  const handleProfileClick = () => { setViewState(ViewState.PROFILE); window.scrollTo({ top: 0 }); };
-
-  if (isCheckingAuth) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 animate-spin text-liberia-blue" /></div>;
+  if (isCheckingAuth) return <div className="min-h-screen flex items-center justify-center bg-slate-50" aria-busy="true" aria-label="Loading application"><Loader2 className="w-8 h-8 animate-spin text-liberia-blue" /></div>;
   if (viewState === ViewState.ADMIN) return <AdminDashboard onLogout={handleGoHome} />;
   if (!currentUser) return <AuthPage onLoginSuccess={setCurrentUser} />;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col selection:bg-liberia-blue/10">
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] bg-liberia-blue text-white px-4 py-2 rounded-lg font-bold shadow-xl outline-none focus:ring-2 focus:ring-offset-2 focus:ring-liberia-gold"
+      >
+        Skip to main content
+      </a>
+      
       <Header 
         onLogoClick={handleGoHome} 
-        onAboutClick={handleAboutClick} 
-        onBusinessClick={handleBusinessClick}
-        onProfileClick={handleProfileClick}
+        onAboutClick={() => setViewState(ViewState.ABOUT)} 
+        onBusinessClick={() => setViewState(ViewState.BUSINESS)}
+        onProfileClick={() => setViewState(ViewState.PROFILE)}
         language={language}
         setLanguage={setLanguage}
         currentUser={currentUser}
         onLogout={() => { authService.logout(); setCurrentUser(null); handleGoHome(); }}
       />
-      <main className="flex-grow">
+      
+      <main id="main-content" ref={mainContentRef} className="flex-grow focus:outline-none" tabIndex={-1}>
         {viewState === ViewState.HOME && <HomeView onSearch={(q) => handleSearch(q)} selectedCounty={selectedCounty} onCountyChange={setSelectedCounty} language={language} />}
         {viewState === ViewState.ABOUT && <AboutView />}
         {viewState === ViewState.BUSINESS && <BusinessView currentUser={currentUser} onUserUpdate={setCurrentUser} />}
@@ -131,7 +134,7 @@ const App: React.FC = () => {
               </div>
             </div>
             {loading && !searchResult?.text ? (
-               <div className="max-w-4xl mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-6 text-slate-400">
+               <div className="max-w-4xl mx-auto px-4 py-32 flex flex-col items-center justify-center space-y-6 text-slate-400" role="status" aria-label="Searching verified national archives">
                   <div className="relative">
                     <Loader2 className="w-12 h-12 animate-spin text-liberia-blue" />
                     <Sparkles className="w-6 h-6 text-liberia-gold absolute -top-2 -right-2 animate-pulse" />
@@ -142,19 +145,15 @@ const App: React.FC = () => {
                   </div>
                </div>
             ) : (
-               <ResultsView query={query} result={searchResult} onBusinessClick={handleBusinessClick} />
+               <ResultsView query={query} result={searchResult} onBusinessClick={() => setViewState(ViewState.BUSINESS)} />
             )}
           </div>
         )}
       </main>
-      <footer className="bg-slate-900 text-slate-400 py-12 text-center border-t border-slate-800">
+      
+      <footer className="bg-slate-900 text-slate-400 py-12 text-center border-t border-slate-800" role="contentinfo">
           <div className="max-w-7xl mx-auto px-4">
               <p className="text-sm">&copy; {new Date().getFullYear()} AskLiberia. Information provided for educational purposes. 🇱🇷</p>
-              <div className="mt-4 flex justify-center space-x-6 text-xs font-bold uppercase tracking-widest text-slate-600">
-                  <a href="#" className="hover:text-liberia-gold transition-colors">Privacy</a>
-                  <a href="#" className="hover:text-liberia-gold transition-colors">Terms</a>
-                  <a href="#" className="hover:text-liberia-gold transition-colors">API Status</a>
-              </div>
           </div>
       </footer>
       <ChatWidget language={language} />
